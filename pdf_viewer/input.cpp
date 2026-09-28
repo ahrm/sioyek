@@ -1150,6 +1150,7 @@ public:
 class SymbolCommand : public Command {
 public:
     char symbol = 0;
+    bool symbol_control_pressed = false;
     SymbolCommand(std::string name, MainWidget* w) : Command(name, w) {}
     virtual std::optional<Requirement> next_requirement(MainWidget* widget) {
         if (symbol == 0) {
@@ -1162,6 +1163,11 @@ public:
 
     virtual void set_symbol_requirement(char value) {
         this->symbol = value;
+    }
+
+    void set_symbol_requirement_with_modifiers(char value, bool control_pressed) override {
+        set_symbol_requirement(value);
+        symbol_control_pressed = control_pressed;
     }
 
     virtual std::string get_human_readable_name() {
@@ -2659,10 +2665,14 @@ public:
 class AddHighlightCommand : public SymbolCommand {
 public:
     static inline const std::string cname = "add_highlight";
-    static inline const std::string hname = "Highlight selected text";
+    static inline const std::string hname = "Highlight selected text, or set a selected note color with Ctrl+symbol";
     AddHighlightCommand(MainWidget* w) : SymbolCommand(cname, w) {};
 
     void perform() {
+        if (symbol_control_pressed) {
+            widget->change_selected_bookmark_color(symbol);
+            return;
+        }
         result = widget->handle_add_highlight(symbol);
     }
 
@@ -3645,13 +3655,13 @@ public:
     }
 };
 
-class ChangeSelectedBookmarkColorCommand : public Command {
+class ChangeSelectedBookmarkColorCommand : public SymbolCommand {
 public:
     static inline const std::string cname = "change_selected_bookmark_color";
-    static inline const std::string hname = "Choose the selected note's text color";
-    ChangeSelectedBookmarkColorCommand(MainWidget* w) : Command(cname, w) {};
+    static inline const std::string hname = "Set the selected note's text color from the highlight palette";
+    ChangeSelectedBookmarkColorCommand(MainWidget* w) : SymbolCommand(cname, w) {};
     void perform() override {
-        widget->change_selected_bookmark_color();
+        widget->change_selected_bookmark_color(symbol);
     }
 };
 
@@ -8422,6 +8432,10 @@ std::optional<std::wstring> Command::get_result() {
 
 void Command::set_text_requirement(std::wstring value) {}
 void Command::set_symbol_requirement(char value) {}
+void Command::set_symbol_requirement_with_modifiers(char value, bool control_pressed) {
+    (void)control_pressed;
+    set_symbol_requirement(value);
+}
 void Command::set_file_requirement(std::wstring value) {}
 void Command::set_rect_requirement(AbsoluteRect value) {}
 void Command::set_point_requirement(AbsoluteDocumentPos value) {}

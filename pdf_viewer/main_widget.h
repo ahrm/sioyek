@@ -481,7 +481,7 @@ public:
     void set_command_textbox_text(const std::wstring& txt);
     void change_selected_highlight_type(char new_type);
     void change_selected_bookmark_text(const std::wstring& new_text);
-    void change_selected_bookmark_color();
+    void change_selected_bookmark_color(char type);
     void begin_note_arrow();
     void delete_selected_note_arrow();
     int note_arrow_handle_at(WindowPos pos);

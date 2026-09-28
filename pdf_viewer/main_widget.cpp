@@ -16,7 +16,6 @@
 #include "coordinates.h"
 #include <QPlainTextEdit>
 #include <QTextDocument>
-#include <QColorDialog>
 #include <iostream>
 #include <vector>
 #include <string>
@@ -1013,7 +1012,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     freetext_editor->viewport()->setCursor(Qt::IBeamCursor);
     freetext_editor->setStyleSheet("QPlainTextEdit { background: #fffde7; border: none; selection-background-color: #377ac4; selection-color: white; }");
     freetext_editor->setWordWrapMode(QTextOption::WordWrap);
-    freetext_editor->setToolTip("Enter: save · Shift+Enter: new line · Escape: cancel · Ctrl +/-: text size · Ctrl+Shift+C: text color · Ctrl+Shift+A: arrow");
+    freetext_editor->setToolTip("Enter: save · Shift+Enter: new line · Escape: cancel · Ctrl +/-: text size · Ctrl+Shift+C: color palette · Ctrl+Shift+A: arrow");
     freetext_editor->installEventFilter(this);
     QObject::connect(freetext_editor, &QPlainTextEdit::textChanged, this, [this]() {
         if (freetext_editor->isVisible()) {
@@ -2397,7 +2396,8 @@ void MainWidget::key_event(bool released, QKeyEvent* kevent, bool is_auto_repeat
 
             char symb = get_symbol(kevent->key(), kevent->modifiers() & Qt::ShiftModifier, pending_command_instance->special_symbols());
             if (symb) {
-                pending_command_instance->set_symbol_requirement(symb);
+                pending_command_instance->set_symbol_requirement_with_modifiers(
+                    symb, is_platform_control_pressed(kevent));
                 advance_command(std::move(pending_command_instance));
             }
             validate_render();
@@ -9058,16 +9058,16 @@ void MainWidget::change_selected_bookmark_text(const std::wstring& new_text) {
     }
 }
 
-void MainWidget::change_selected_bookmark_color() {
+void MainWidget::change_selected_bookmark_color(char type) {
     if (!doc() || selected_bookmark_index < 0 || selected_bookmark_index >= doc()->get_bookmarks().size()) return;
     BookMark& bookmark = doc()->get_bookmarks()[selected_bookmark_index];
     if (!bookmark.is_freetext() || bookmark.is_box()) return;
 
-    QColor current = QColor::fromRgbF(bookmark.color[0], bookmark.color[1], bookmark.color[2]);
-    QColor chosen = QColorDialog::getColor(current, this, "Note text color");
-    if (!chosen.isValid()) return;
+    if (type >= 'A' && type <= 'Z') type = type - 'A' + 'a';
+    if (type < 'a' || type > 'z') return;
 
-    float color[3] = {static_cast<float>(chosen.redF()), static_cast<float>(chosen.greenF()), static_cast<float>(chosen.blueF())};
+    const float* palette_color = get_highlight_type_color(type);
+    float color[3] = {palette_color[0], palette_color[1], palette_color[2]};
     if (pending_command_instance && pending_command_instance->get_name() == "add_freetext_bookmark") {
         // New notes are written to the database only when the text is saved.
         for (int component = 0; component < 3; ++component) bookmark.color[component] = color[component];
@@ -9237,7 +9237,8 @@ bool MainWidget::eventFilter(QObject* obj, QEvent* event) {
         }
         if (key->modifiers() & (Qt::ControlModifier | Qt::MetaModifier)) {
             if ((key->modifiers() & Qt::ShiftModifier) && key->key() == Qt::Key_C) {
-                change_selected_bookmark_color();
+                finish_freetext_edit();
+                run_command_with_name("change_selected_bookmark_color");
                 return true;
             }
             if ((key->modifiers() & Qt::ShiftModifier) && key->key() == Qt::Key_A) {
