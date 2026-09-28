@@ -2,13 +2,6 @@
 name: Build Release
 
 on:
-  push:
-    tags:
-      - "v*"
-  pull_request:
-    branches:
-      - "*"
-
   workflow_dispatch:
 
 jobs:
