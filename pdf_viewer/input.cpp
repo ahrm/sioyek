@@ -5241,11 +5241,11 @@ public:
 class KeysCommand : public Command {
 public:
     static inline const std::string cname = "keys";
-    static inline const std::string hname = "Open the default keys config file";
+    static inline const std::string hname = "List effective key bindings";
     KeysCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
-        open_file(default_keys_path.get_path(), true);
+        widget->show_keybindings();
     }
 
     bool requires_document() { return false; }

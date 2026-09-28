@@ -727,6 +727,7 @@ public:
     void hande_turn_off_all_drawings();
     void handle_toggle_drawing_mask(char symbol);
     void show_command_palette();
+    void show_keybindings();
 
     DocumentPos get_document_pos_under_window_pos(WindowPos window_pos);
     AbsoluteDocumentPos get_absolute_document_pos_under_window_pos(WindowPos window_pos);
