@@ -1285,6 +1285,25 @@ void open_file(const std::wstring& path, bool show_fail_message) {
 
 }
 
+void open_text_file(const std::wstring& path, bool show_fail_message) {
+    QString editor = qEnvironmentVariable("VISUAL");
+    if (editor.isEmpty()) {
+        editor = qEnvironmentVariable("EDITOR");
+    }
+
+    QString canonical_path = QString::fromStdWString(get_canonical_path(path));
+    QStringList arguments = QProcess::splitCommand(editor);
+    if (!arguments.isEmpty()) {
+        QString program = arguments.takeFirst();
+        arguments.push_back(canonical_path);
+        if (QProcess::startDetached(program, arguments)) {
+            return;
+        }
+    }
+
+    open_file_url(canonical_path, show_fail_message);
+}
+
 void get_text_from_flat_chars(const std::vector<fz_stext_char*>& flat_chars, std::wstring& string_res, std::vector<int>& indices) {
 
     string_res.clear();

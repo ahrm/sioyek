@@ -6783,7 +6783,7 @@ void MainWidget::handle_keys_user_all() {
         keys_paths_wstring,
         [&](std::wstring* path) {
             if (path) {
-                open_file(*path, true);
+                open_text_file(*path, true);
             }
         },
         this));
@@ -6803,7 +6803,7 @@ void MainWidget::handle_prefs_user_all() {
         prefs_paths_wstring,
         [&](std::wstring* path) {
             if (path) {
-                open_file(*path, true);
+                open_text_file(*path, true);
             }
         },
         this));
