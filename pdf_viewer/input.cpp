@@ -5188,6 +5188,19 @@ public:
     }
 };
 
+class ShowKeybindingsCommand : public Command {
+public:
+    static inline const std::string cname = "show_keybindings";
+    static inline const std::string hname = "List the effective key bindings";
+    ShowKeybindingsCommand(MainWidget* w) : Command(cname, w) {};
+
+    void perform() {
+        widget->show_keybindings();
+    }
+
+    bool requires_document() { return false; }
+};
+
 class KeysCommand : public Command {
 public:
     static inline const std::string cname = "keys";
@@ -7365,6 +7378,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<KeyboardSmartjumpCommand>();
     register_command<KeyboardOverviewCommand>();
     register_command<KeysCommand>();
+    register_command<ShowKeybindingsCommand>();
     register_command<KeysUserCommand>();
     register_command<PrefsCommand>();
     register_command<PrefsUserCommand>();
