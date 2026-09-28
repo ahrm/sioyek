@@ -2040,7 +2040,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
 
                     std::array<float, 3> bookmark_color = cc3(bookmarks[i].color);
                     painter->setPen(convert_float3_to_qcolor(&bookmark_color[0]));
-                    if (RENDER_FREETEXT_BORDERS) {
+                    if (RENDER_FREETEXT_BORDERS || bookmarks[i].description.empty()) {
                         painter->drawRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
                     }
 

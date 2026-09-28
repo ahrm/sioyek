@@ -1012,7 +1012,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     freetext_editor->viewport()->setCursor(Qt::IBeamCursor);
     freetext_editor->setStyleSheet("QPlainTextEdit { background: #fffde7; border: none; selection-background-color: #377ac4; selection-color: white; }");
     freetext_editor->setWordWrapMode(QTextOption::WordWrap);
-    freetext_editor->setToolTip("Enter: save · Shift+Enter: new line · Escape: cancel · $...$: inline math · $$...$$: display math · Ctrl +/-: text size · Ctrl+Shift+C: color palette · Ctrl+Shift+A: arrow");
+    freetext_editor->setToolTip("Enter or click elsewhere: save · Empty text: rectangle · Shift+Enter: new line · Escape: cancel · $...$: inline math · $$...$$: display math · Ctrl +/-: text size");
     freetext_editor->installEventFilter(this);
     QObject::connect(freetext_editor, &QPlainTextEdit::textChanged, this, [this]() {
         if (freetext_editor->isVisible()) {
@@ -9047,14 +9047,8 @@ void MainWidget::add_text_annotation_to_selected_highlight(const std::wstring& a
 
 void MainWidget::change_selected_bookmark_text(const std::wstring& new_text) {
     if (selected_bookmark_index != -1) {
-        if (new_text.size() > 0) {
-            float new_font_size = doc()->get_bookmarks()[selected_bookmark_index].font_size;
-            doc()->update_bookmark_text(selected_bookmark_index, new_text, new_font_size);
-        }
-        else {
-            doc()->delete_bookmark(selected_bookmark_index);
-            set_selected_bookmark_index(-1);
-        }
+        float new_font_size = doc()->get_bookmarks()[selected_bookmark_index].font_size;
+        doc()->update_bookmark_text(selected_bookmark_index, new_text, new_font_size);
     }
 }
 
@@ -11022,6 +11016,10 @@ void MainWidget::goto_page_with_page_number(int page_number) {
 
 void MainWidget::goto_search_result(int nth_next_result, bool overview) {
     opengl_widget->goto_search_result(nth_next_result, overview);
+}
+
+bool MainWidget::has_active_search() {
+    return opengl_widget && opengl_widget->get_is_searching(nullptr);
 }
 
 void MainWidget::set_should_highlight_words(bool should_highlight_words) {

@@ -1350,12 +1350,17 @@ public:
 class NextItemCommand : public Command {
 public:
     static inline const std::string cname = "next_item";
-    static inline const std::string hname = "Go to next search result";
+    static inline const std::string hname = "Go to next search result, or start a note when not searching";
     NextItemCommand(MainWidget* w) : Command(cname, w) {}
 
     void perform() {
-        if (num_repeats == 0) num_repeats++;
-        widget->goto_search_result(num_repeats);
+        if (widget->has_active_search()) {
+            if (num_repeats == 0) num_repeats++;
+            widget->goto_search_result(num_repeats);
+        }
+        else {
+            widget->run_command_with_name("add_freetext_bookmark");
+        }
     }
 
     std::string get_name() {
@@ -2427,16 +2432,9 @@ public:
 
     void perform() {
         //widget->doc()->add_freetext_bookmark(text_.value(), rect_.value());
-        if (text_.value().size() > 0) {
-            std::string uuid = widget->doc()->add_pending_bookmark(pending_index, text_.value());
-            result = utf8_decode(uuid);
-            widget->set_selected_bookmark_index(-1);
-        }
-        else {
-            widget->doc()->undo_pending_bookmark(pending_index);
-            widget->set_selected_bookmark_index(-1);
-            result = L"";
-        }
+        std::string uuid = widget->doc()->add_pending_bookmark(pending_index, text_.value());
+        result = utf8_decode(uuid);
+        widget->set_selected_bookmark_index(-1);
 
         widget->clear_selected_rect();
         widget->invalidate_render();
@@ -2665,11 +2663,17 @@ public:
 class AddHighlightCommand : public SymbolCommand {
 public:
     static inline const std::string cname = "add_highlight";
-    static inline const std::string hname = "Highlight selected text, or set a selected note color with Ctrl+symbol";
+    static inline const std::string hname = "Highlight selected text, or set a selected note color";
     AddHighlightCommand(MainWidget* w) : SymbolCommand(cname, w) {};
 
     void perform() {
-        if (symbol_control_pressed) {
+        bool has_selected_note = false;
+        if (widget->doc() && widget->selected_bookmark_index >= 0 &&
+            widget->selected_bookmark_index < widget->doc()->get_bookmarks().size()) {
+            const BookMark& bookmark = widget->doc()->get_bookmarks()[widget->selected_bookmark_index];
+            has_selected_note = bookmark.is_freetext() && !bookmark.is_box();
+        }
+        if (has_selected_note || symbol_control_pressed) {
             widget->change_selected_bookmark_color(symbol);
             return;
         }
