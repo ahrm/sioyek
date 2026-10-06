@@ -139,6 +139,10 @@ void get_flat_toc(const std::vector<TocNode*>& roots, std::vector<std::wstring>&
 TocNode* get_toc_node_from_indices_helper(const std::vector<TocNode*>& roots, const std::vector<int>& indices, int pointer) {
     assert(pointer >= 0);
 
+    if (pointer >= roots.size()){
+        return nullptr;
+    }
+
     if (pointer == 0) {
         return roots[indices[pointer]];
     }

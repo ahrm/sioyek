@@ -586,6 +586,7 @@ public:
     void set_current_widget(QWidget* new_widget);
     void push_current_widget(QWidget* new_widget);
     void pop_current_widget(bool canceled = false);
+    void pop_all_widgets();
     void show_current_widget();
     bool focus_on_visual_mark_pos(bool moving_down);
     void toggle_visual_scroll_mode();
