@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 project(sioyek VERSION 2.0.0 LANGUAGES C CXX)
 
+include(GNUInstallDirs)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -210,6 +212,21 @@ install(TARGETS sioyek
     BUNDLE DESTINATION .
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+
+if(UNIX AND NOT APPLE AND NOT ANDROID)
+  install(DIRECTORY pdf_viewer/shaders/
+          DESTINATION ${CMAKE_INSTALL_DATADIR}/sioyek/shaders)
+  install(FILES tutorial.pdf
+          DESTINATION ${CMAKE_INSTALL_DATADIR}/sioyek)
+  install(FILES pdf_viewer/keys.config pdf_viewer/prefs.config
+          DESTINATION ${CMAKE_INSTALL_DATADIR}/sioyek)
+  install(FILES resources/sioyek.desktop
+          DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+  install(FILES resources/sioyek-icon-linux.png
+          DESTINATION ${CMAKE_INSTALL_DATADIR}/pixmaps)
+  install(FILES resources/sioyek.1
+          DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
+endif()
 
 qt_generate_deploy_app_script(
     TARGET sioyek

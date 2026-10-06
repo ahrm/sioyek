@@ -258,8 +258,8 @@ void configure_paths() {
     Path read_only_data_path = Path(L"/usr/share/sioyek");
     standard_data_path.create_directories();
 
-    default_config_path = standard_config_path.slash(L"prefs.config");
-    default_keys_path = standard_config_path.slash(L"keys.config");
+    default_config_path = read_only_data_path.slash(L"prefs.config");
+    default_keys_path = read_only_data_path.slash(L"keys.config");
 
     database_file_path = standard_data_path.slash(L"test.db");
     local_database_file_path = standard_data_path.slash(L"local.db");
