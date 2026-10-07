@@ -744,6 +744,8 @@ void DocumentView::move_pages(int num_pages) {
     int padding = two_page_mode ? page_space_y : PAGE_PADDINGS;
 
     move_virtual(0, num_pages * (current_document->get_page_height(current_page) + padding));
+    // this is only so that we don't go out of bounds
+    move_absolute(0, 0);
 }
 
 void DocumentView::move_screens(int num_screens) {
