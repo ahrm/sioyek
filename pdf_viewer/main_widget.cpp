@@ -9187,6 +9187,70 @@ void MainWidget::show_command_palette() {
     show_current_widget();
 }
 
+void MainWidget::show_keybindings() {
+    struct KeyBindingRow {
+        std::string shortcuts;
+        std::string command;
+        std::string description;
+    };
+
+    std::vector<KeyBindingRow> rows;
+    auto key_mappings = input_handler->get_command_key_mappings();
+    rows.reserve(key_mappings.size());
+
+    for (const auto& [command, mappings] : key_mappings) {
+        if (mappings.empty()) {
+            continue;
+        }
+
+        std::string shortcuts;
+        for (size_t i = 0; i < mappings.size(); i++) {
+            if (i > 0) {
+                shortcuts += ", ";
+            }
+            shortcuts += mappings[i];
+        }
+
+        std::string description;
+        auto description_it = command_manager->command_human_readable_names.find(command);
+        if (description_it != command_manager->command_human_readable_names.end()) {
+            description = description_it->second;
+        }
+        rows.push_back({ shortcuts, command, description });
+    }
+
+    std::sort(rows.begin(), rows.end(), [](const KeyBindingRow& lhs, const KeyBindingRow& rhs) {
+        if (lhs.shortcuts == rhs.shortcuts) {
+            return lhs.command < rhs.command;
+        }
+        return lhs.shortcuts < rhs.shortcuts;
+    });
+
+    std::vector<std::wstring> shortcuts;
+    std::vector<std::wstring> command_names;
+    std::vector<std::wstring> command_descriptions;
+    shortcuts.reserve(rows.size());
+    command_names.reserve(rows.size());
+    command_descriptions.reserve(rows.size());
+
+    for (const auto& row : rows) {
+        shortcuts.push_back(utf8_decode(row.shortcuts));
+        command_names.push_back(utf8_decode(row.command));
+        command_descriptions.push_back(utf8_decode(row.description));
+    }
+
+    set_filtered_select_menu<std::wstring>(this, true,
+        false,
+        { command_descriptions, command_names, shortcuts },
+        command_names,
+        -1,
+        [](std::wstring*) {
+        },
+        [](std::wstring*) {
+        });
+    show_current_widget();
+}
+
 TouchTextSelectionButtons* MainWidget::get_text_selection_buttons() {
     if (text_selection_buttons_ == nullptr) {
         text_selection_buttons_ = new TouchTextSelectionButtons(this);
