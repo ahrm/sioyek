@@ -1,6 +1,6 @@
 # Sioyek
 
-Sioyek is a PDF viewer with a focus on textbooks and research papers.
+Sioyek is a PDF and DjVu viewer with a focus on textbooks and research papers.
 
 # Development Branch FAQ
 
@@ -130,7 +130,7 @@ You can customize all key bindings and some UI elements by editing `keys_user.co
 Run the following commands to install dependencies, clone the repository and compile sioyek on Fedora (tested on Fedora Workstation 36).
 
 ```
-sudo dnf install qt5-qtbase-devel qt5-qtbase-static qt5-qt3d-devel harfbuzz-devel
+sudo dnf install qt5-qtbase-devel qt5-qtbase-static qt5-qt3d-devel harfbuzz-devel djvulibre-devel pkgconf-pkg-config
 git clone --recursive --branch development https://github.com/ahrm/sioyek
 cd sioyek
 ./build_linux.sh
@@ -140,9 +140,9 @@ cd sioyek
 1. Install Qt 5 and make sure `qmake` is in `PATH`.
 
     Run `qmake --version` to make sure the `qmake` in path is using Qt 5.x.
-2. Install `libharfbuzz`:
+2. Install `libharfbuzz`, DjVuLibre, and pkg-config:
 ```
-sudo apt install libharfbuzz-dev
+sudo apt install libharfbuzz-dev libdjvulibre-dev pkg-config
 ```
 3. Clone the repository and build:
 ```

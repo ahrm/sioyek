@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cmath>
 
 #include <qcolor.h>
@@ -5,6 +6,11 @@
 #include <qapplication.h>
 #include <qdatetime.h>
 #include <qfile.h>
+#include <QPainterPath>
+
+#ifdef SIOYEK_JKQT_MATHTEXT_SUPPORT
+#include <jkqtmathtext/jkqtmathtext.h>
+#endif
 
 #include "pdf_view_opengl_widget.h"
 #include "path.h"
@@ -64,6 +70,7 @@ extern bool SLICED_RENDERING;
 //extern float BOOKMARK_RECT_SIZE;
 extern bool RENDER_FREETEXT_BORDERS;
 extern float FREETEXT_BOOKMARK_FONT_SIZE;
+extern std::wstring FREETEXT_BOOKMARK_FONT_FACE;
 extern float STRIKE_LINE_WIDTH;
 extern std::wstring RULER_DISPLAY_MODE;
 extern float RULER_COLOR[3];
@@ -717,7 +724,8 @@ void PdfViewOpenGLWidget::render_scratchpad(QPainter* painter) {
      render_compiled_drawings();
      glEnableVertexAttribArray(0);
      glUseProgram(shared_gl_objects.line_program);
-     render_drawings(scratchpad, scratchpad->get_non_compiled_drawings());
+     render_rectangle_drawings(scratchpad, scratchpad->get_all_drawings());
+     render_freehand_drawings(scratchpad, scratchpad->get_non_compiled_drawings());
      render_drawings(scratchpad, moving_drawings, true);
      render_drawings(scratchpad, moving_drawings, false);
      render_drawings(scratchpad, pending_drawing);
@@ -754,6 +762,286 @@ void PdfViewOpenGLWidget::paintGL() {
     }
 
     //painter.drawText(-100, -100, "1234567890");
+}
+
+#ifdef SIOYEK_JKQT_MATHTEXT_SUPPORT
+namespace {
+
+enum class NoteTextSegmentType {
+    PlainText,
+    InlineMath,
+    DisplayMath,
+    LineBreak,
+};
+
+struct NoteTextSegment {
+    NoteTextSegmentType type;
+    QString text;
+};
+
+bool is_escaped_dollar(const QString& text, int index) {
+    int preceding_backslashes = 0;
+    for (int i = index - 1; i >= 0 && text[i] == '\\'; --i) {
+        preceding_backslashes++;
+    }
+    return preceding_backslashes % 2 == 1;
+}
+
+void append_plain_note_segments(std::vector<NoteTextSegment>& segments, const QString& text) {
+    int line_start = 0;
+    for (int i = 0; i < text.size(); i++) {
+        if (text[i] != '\n') continue;
+        if (i > line_start) {
+            segments.push_back({NoteTextSegmentType::PlainText, text.mid(line_start, i - line_start)});
+        }
+        segments.push_back({NoteTextSegmentType::LineBreak, {}});
+        line_start = i + 1;
+    }
+    if (line_start < text.size()) {
+        segments.push_back({NoteTextSegmentType::PlainText, text.mid(line_start)});
+    }
+}
+
+std::vector<NoteTextSegment> parse_note_text_segments(const QString& text, bool& has_math) {
+    std::vector<NoteTextSegment> segments;
+    has_math = false;
+    int plain_start = 0;
+    int index = 0;
+
+    while (index < text.size()) {
+        if (text[index] != '$' || is_escaped_dollar(text, index)) {
+            index++;
+            continue;
+        }
+
+        const bool is_display = index + 1 < text.size() && text[index + 1] == '$';
+        const int delimiter_size = is_display ? 2 : 1;
+        int closing = -1;
+        for (int i = index + delimiter_size; i < text.size(); i++) {
+            if (text[i] != '$' || is_escaped_dollar(text, i)) continue;
+            if (is_display) {
+                if (i + 1 < text.size() && text[i + 1] == '$') {
+                    closing = i;
+                    break;
+                }
+            }
+            else if (i + 1 >= text.size() || text[i + 1] != '$') {
+                closing = i;
+                break;
+            }
+        }
+
+        if (closing < 0) {
+            index += delimiter_size;
+            continue;
+        }
+
+        append_plain_note_segments(segments, text.mid(plain_start, index - plain_start));
+        segments.push_back({
+            is_display ? NoteTextSegmentType::DisplayMath : NoteTextSegmentType::InlineMath,
+            text.mid(index + delimiter_size, closing - index - delimiter_size),
+        });
+        has_math = true;
+        index = closing + delimiter_size;
+        plain_start = index;
+    }
+
+    append_plain_note_segments(segments, text.mid(plain_start));
+    return segments;
+}
+
+struct NoteLayoutItem {
+    QString text;
+    JKQTMathText* math = nullptr;
+    double width = 0.0;
+    double ascent = 0.0;
+    double descent = 0.0;
+    double scale = 1.0;
+    bool whitespace = false;
+};
+
+struct NoteLayoutLine {
+    std::vector<NoteLayoutItem> items;
+    double width = 0.0;
+    double ascent = 0.0;
+    double descent = 0.0;
+    bool centered = false;
+};
+
+}
+
+JKQTMathText* PdfViewOpenGLWidget::get_note_math_renderer(const QString& latex) {
+    const std::string key = latex.toUtf8().toStdString();
+    auto [entry, inserted] = note_math_cache.try_emplace(key);
+    if (inserted) {
+        auto renderer = std::make_unique<JKQTMathText>();
+        renderer->useXITS();
+        const auto options = JKQTMathText::ParseOptions(JKQTMathText::StartWithMathMode);
+        if (renderer->parse(latex, JKQTMathText::DefaultParser, options)) {
+            entry->second = std::move(renderer);
+        }
+    }
+    return entry->second.get();
+}
+#endif
+
+void PdfViewOpenGLWidget::render_note_text(
+    QPainter* painter,
+    const QRect& rect,
+    int flags,
+    const QString& text) {
+#ifndef SIOYEK_JKQT_MATHTEXT_SUPPORT
+    painter->drawText(rect, flags, text);
+#else
+    bool has_math = false;
+    const std::vector<NoteTextSegment> segments = parse_note_text_segments(text, has_math);
+    if (!has_math) {
+        painter->drawText(rect, flags, text);
+        return;
+    }
+
+    // Bound stale entries created while a note is edited without invalidating
+    // renderers referenced by the layout currently being assembled.
+    if (note_math_cache.size() > 128) note_math_cache.clear();
+
+    const QFontMetricsF metrics(painter->font(), painter->device());
+    const double available_width = std::max(1, rect.width());
+    const double normal_ascent = metrics.ascent();
+    const double normal_descent = metrics.descent();
+    const double math_font_size = std::max(1.0, normal_ascent + normal_descent);
+    std::vector<NoteLayoutLine> lines;
+    NoteLayoutLine current_line;
+
+    auto finish_line = [&](bool force_empty_line = false) {
+        while (!current_line.items.empty() && current_line.items.back().whitespace) {
+            current_line.width -= current_line.items.back().width;
+            current_line.items.pop_back();
+        }
+        if (!current_line.items.empty() || force_empty_line) {
+            if (current_line.items.empty()) {
+                current_line.ascent = normal_ascent;
+                current_line.descent = normal_descent;
+            }
+            lines.push_back(std::move(current_line));
+            current_line = {};
+        }
+    };
+
+    auto add_item = [&](NoteLayoutItem item) {
+        if (item.whitespace && current_line.items.empty()) return;
+        if (!current_line.items.empty() && current_line.width + item.width > available_width) {
+            finish_line();
+            if (item.whitespace) return;
+        }
+        if (item.math != nullptr && item.width > available_width) {
+            item.scale = available_width / item.width;
+            item.width *= item.scale;
+            item.ascent *= item.scale;
+            item.descent *= item.scale;
+        }
+        current_line.width += item.width;
+        current_line.ascent = std::max(current_line.ascent, item.ascent);
+        current_line.descent = std::max(current_line.descent, item.descent);
+        current_line.items.push_back(std::move(item));
+    };
+
+    auto add_plain_text = [&](const QString& plain_text) {
+        int token_start = 0;
+        while (token_start < plain_text.size()) {
+            const bool whitespace = plain_text[token_start].isSpace();
+            int token_end = token_start + 1;
+            while (token_end < plain_text.size() && plain_text[token_end].isSpace() == whitespace) {
+                token_end++;
+            }
+            QString token = plain_text.mid(token_start, token_end - token_start);
+            token.replace('\t', "    ");
+            add_item({
+                token,
+                nullptr,
+                metrics.horizontalAdvance(token),
+                normal_ascent,
+                normal_descent,
+                1.0,
+                whitespace,
+            });
+            token_start = token_end;
+        }
+    };
+
+    for (const NoteTextSegment& segment : segments) {
+        if (segment.type == NoteTextSegmentType::PlainText) {
+            add_plain_text(segment.text);
+            continue;
+        }
+        if (segment.type == NoteTextSegmentType::LineBreak) {
+            finish_line(true);
+            continue;
+        }
+
+        JKQTMathText* math = get_note_math_renderer(segment.text);
+        if (math == nullptr) {
+            const QString delimiter = segment.type == NoteTextSegmentType::DisplayMath ? "$$" : "$";
+            add_plain_text(delimiter + segment.text + delimiter);
+            continue;
+        }
+        math->setFontSizePixels(math_font_size);
+        math->setFontColor(painter->pen().color());
+        const JKQTMathTextNodeSize size = math->getSizeDetail(*painter);
+        NoteLayoutItem item {
+            {},
+            math,
+            size.width,
+            size.getAscent(),
+            size.getDescent(),
+            1.0,
+            false,
+        };
+
+        if (segment.type == NoteTextSegmentType::DisplayMath) {
+            finish_line();
+            add_item(std::move(item));
+            current_line.centered = true;
+            finish_line();
+        }
+        else {
+            add_item(std::move(item));
+        }
+    }
+    finish_line();
+
+    painter->save();
+    painter->setClipRect(rect);
+    double line_top = rect.top();
+    const double line_spacing = std::max(1.0, metrics.leading());
+    const bool align_right = flags & Qt::AlignRight;
+    for (const NoteLayoutLine& line : lines) {
+        if (line_top >= rect.bottom()) break;
+        const double baseline = line_top + line.ascent;
+        double x = rect.left();
+        if (line.centered) {
+            x += (available_width - line.width) / 2.0;
+        }
+        else if (align_right) {
+            x += available_width - line.width;
+        }
+
+        for (const NoteLayoutItem& item : line.items) {
+            if (item.math == nullptr) {
+                painter->drawText(QPointF(x, baseline), item.text);
+            }
+            else {
+                painter->save();
+                painter->translate(x, baseline);
+                painter->scale(item.scale, item.scale);
+                item.math->draw(*painter, 0.0, 0.0, false);
+                painter->restore();
+            }
+            x += item.width;
+        }
+        line_top += line.ascent + line.descent + line_spacing;
+    }
+    painter->restore();
+#endif
 }
 
 PdfViewOpenGLWidget::PdfViewOpenGLWidget(DocumentView* document_view, PdfRenderer* pdf_renderer, ConfigManager* config_manager, bool is_helper, QWidget* parent) :
@@ -1744,13 +2032,15 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                     QRect window_qrect = QRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
 
                     QFont font = painter->font();
+                    const std::wstring& family = bookmarks[i].font_face.empty() ? FREETEXT_BOOKMARK_FONT_FACE : bookmarks[i].font_face;
+                    if (!family.empty()) font.setFamily(QString::fromStdWString(family));
                     float font_size = bookmarks[i].font_size == -1 ? FREETEXT_BOOKMARK_FONT_SIZE : bookmarks[i].font_size;
                     font.setPointSizeF(font_size * document_view->get_zoom_level() * 0.75);
                     painter->setFont(font);
 
                     std::array<float, 3> bookmark_color = cc3(bookmarks[i].color);
                     painter->setPen(convert_float3_to_qcolor(&bookmark_color[0]));
-                    if (RENDER_FREETEXT_BORDERS) {
+                    if (RENDER_FREETEXT_BORDERS || bookmarks[i].description.empty()) {
                         painter->drawRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
                     }
 
@@ -1762,7 +2052,7 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                         flags |= Qt::AlignLeft;
                     }
 
-                    if (bookmarks[i].description[0] == '#') {
+                    if (bookmarks[i].is_box()) {
 
                         QString box_text = QString::fromStdWString(bookmarks[i].description).split(' ')[0];
                         std::optional<char> bm_type = bookmarks[i].get_type();
@@ -1786,15 +2076,68 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
                         }
                     }
                     else {
-                        if (i == selected_bookmark_index) {
-                            float temp_color[3] = {0.5f, 0.5f, 0.5f};
-                            painter->setPen(convert_float3_to_qcolor(&temp_color[0]));
-                            painter->setPen(Qt::DashLine);
-                            QRect fill_rect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
-                            painter->fillRect(fill_rect, QColor(255, 255, 0, 128));
-                            painter->drawRect(window_rect.x0, window_rect.y0, fz_irect_width(window_rect), fz_irect_height(window_rect));
+                        if (bookmarks[i].arrow) {
+                            const NoteArrow& arrow = *bookmarks[i].arrow;
+                            WindowPos anchor = note_arrow_anchor(bookmarks[i], arrow.control1).to_window(document_view);
+                            WindowPos control1 = arrow.control1.to_window(document_view);
+                            WindowPos control2 = arrow.control2.to_window(document_view);
+                            WindowPos tip = arrow.tip.to_window(document_view);
+                            QPointF start_point(anchor.x, anchor.y);
+                            QPointF control1_point(control1.x, control1.y);
+                            QPointF control2_point(control2.x, control2.y);
+                            QPointF tip_point(tip.x, tip.y);
+
+                            painter->save();
+                            painter->setRenderHint(QPainter::Antialiasing, true);
+                            QColor arrow_color = convert_float3_to_qcolor(&bookmark_color[0]);
+                            painter->setPen(QPen(arrow_color, 2.4, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+                            QPainterPath curve(start_point);
+                            curve.cubicTo(control1_point, control2_point, tip_point);
+                            painter->drawPath(curve);
+
+                            QPointF tangent = tip_point - control2_point;
+                            float tangent_length = std::hypot(tangent.x(), tangent.y());
+                            if (tangent_length < 1.0f) {
+                                tangent = tip_point - start_point;
+                                tangent_length = std::hypot(tangent.x(), tangent.y());
+                            }
+                            if (tangent_length >= 1.0f) {
+                                QPointF direction = tangent / tangent_length;
+                                QPointF normal(-direction.y(), direction.x());
+                                QPointF base = tip_point - direction * 12.0;
+                                painter->drawLine(tip_point, base + normal * 5.0);
+                                painter->drawLine(tip_point, base - normal * 5.0);
+                            }
+
+                            if (i == selected_bookmark_index) {
+                                painter->setPen(QPen(QColor(55, 122, 196), 1, Qt::DashLine));
+                                painter->drawLine(start_point, control1_point);
+                                painter->drawLine(control2_point, tip_point);
+                                painter->setPen(QColor(55, 122, 196));
+                                painter->setBrush(Qt::white);
+                                painter->drawEllipse(control1_point, 5, 5);
+                                painter->drawEllipse(control2_point, 5, 5);
+                                painter->drawEllipse(tip_point, 5, 5);
+                            }
+                            painter->restore();
                         }
-                        painter->drawText(window_qrect, flags, QString::fromStdWString(bookmarks[i].description));
+                        painter->setPen(convert_float3_to_qcolor(&bookmark_color[0]));
+                        render_note_text(
+                            painter,
+                            window_qrect.adjusted(5, 5, -5, -5),
+                            flags,
+                            QString::fromStdWString(bookmarks[i].description));
+                        if (i == selected_bookmark_index) {
+                            painter->setPen(QColor(55, 122, 196));
+                            for (int x : {window_qrect.left(), window_qrect.center().x(), window_qrect.right()}) {
+                                for (int y : {window_qrect.top(), window_qrect.center().y(), window_qrect.bottom()}) {
+                                    if (x == window_qrect.center().x() && y == window_qrect.center().y()) continue;
+                                    QRect handle(x - 3, y - 3, 6, 6);
+                                    painter->fillRect(handle, Qt::white);
+                                    painter->drawRect(handle);
+                                }
+                            }
+                        }
                     }
 
                 }
@@ -3008,6 +3351,9 @@ void PdfViewOpenGLWidget::compile_drawings(DocumentView* dv, const std::vector<F
         if (!visible_drawing_mask[drawing.type - 'a']) {
             continue;
         }
+        if (drawing.is_rectangle()) {
+            continue;
+        }
         if (drawing.points.size() == 1) {
             add_point_coords(drawing.points[0], drawing.type - 'a');
 
@@ -3251,6 +3597,79 @@ void PdfViewOpenGLWidget::render_compiled_drawings() {
 }
 
 void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<FreehandDrawing>& drawings, bool highlighted) {
+    render_rectangle_drawings(dv, drawings, highlighted);
+    render_freehand_drawings(dv, drawings, highlighted);
+}
+
+void PdfViewOpenGLWidget::render_rectangle_drawings(DocumentView* dv, const std::vector<FreehandDrawing>& drawings, bool highlighted) {
+    if (drawings.empty()) {
+        return;
+    }
+
+    glEnable(GL_BLEND);
+    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
+    glEnable(GL_DEPTH_TEST);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glUseProgram(shared_gl_objects.line_program);
+    glEnableVertexAttribArray(0);
+
+    for (int i = static_cast<int>(drawings.size()) - 1; i >= 0; i--) {
+        const FreehandDrawing& drawing = drawings[i];
+        if (!drawing.is_rectangle() || drawing.points.empty()) {
+            continue;
+        }
+        if (drawing.type < 'a' || drawing.type > 'z' || !visible_drawing_mask[drawing.type - 'a']) {
+            continue;
+        }
+
+        float source_color[4] = {
+            HIGHLIGHT_COLORS[(drawing.type - 'a') * 3],
+            HIGHLIGHT_COLORS[(drawing.type - 'a') * 3 + 1],
+            HIGHLIGHT_COLORS[(drawing.type - 'a') * 3 + 2],
+            drawing.alpha,
+        };
+        float color[4] = { 0 };
+        get_color_for_current_mode(source_color, color);
+        color[3] = drawing.alpha;
+        if (highlighted) {
+            color[0] = 1.0f;
+            color[1] = 1.0f;
+            color[2] = 0.0f;
+        }
+        glUniform4fv(shared_gl_objects.freehand_line_color_uniform_location, 1, color);
+
+        NormalizedWindowRect window_rect = drawing.bbox().to_window_normalized(dv);
+        float left = std::min(window_rect.x0, window_rect.x1);
+        float right = std::max(window_rect.x0, window_rect.x1);
+        float bottom = std::min(window_rect.y0, window_rect.y1);
+        float top = std::max(window_rect.y0, window_rect.y1);
+        float highlight_factor = highlighted ? 3.0f : 1.0f;
+        float half_width_x = drawing.points[0].thickness * dv->get_zoom_level() / width() * highlight_factor;
+        float half_width_y = drawing.points[0].thickness * dv->get_zoom_level() / height() * highlight_factor;
+
+        std::vector<float> coordinates;
+        coordinates.reserve(48);
+        auto add_quad = [&coordinates](float x0, float y0, float x1, float y1) {
+            coordinates.insert(coordinates.end(), {
+                x0, y0, x1, y0, x0, y1,
+                x0, y1, x1, y0, x1, y1,
+            });
+        };
+
+        add_quad(left - half_width_x, top - half_width_y, right + half_width_x, top + half_width_y);
+        add_quad(left - half_width_x, bottom - half_width_y, right + half_width_x, bottom + half_width_y);
+        add_quad(left - half_width_x, bottom + half_width_y, left + half_width_x, top - half_width_y);
+        add_quad(right - half_width_x, bottom + half_width_y, right + half_width_x, top - half_width_y);
+
+        bind_points(coordinates);
+        glDrawArrays(GL_TRIANGLES, 0, static_cast<GLsizei>(coordinates.size() / 2));
+    }
+
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
+}
+
+void PdfViewOpenGLWidget::render_freehand_drawings(DocumentView* dv, const std::vector<FreehandDrawing>& drawings, bool highlighted) {
 
     if (drawings.size() == 0) return;
 
@@ -3270,6 +3689,9 @@ void PdfViewOpenGLWidget::render_drawings(DocumentView* dv, const std::vector<Fr
     for (int i = drawings.size() - 1; i >= 0; i--) {
         auto drawing = drawings[i];
 
+        if (drawing.is_rectangle()) {
+            continue;
+        }
         if (DEBUG_SMOOTH_FREEHAND_DRAWINGS) {
             drawing = smoothen_drawing(drawing);
         }
@@ -3755,6 +4177,10 @@ ScratchPad* PdfViewOpenGLWidget::get_scratchpad() {
 void PdfViewOpenGLWidget::render_selected_rectangle() {
 
     if (selected_rectangle) {
+        // Two-page rendering leaves the last page mask in the stencil buffer.
+        // Rectangle selection owns the whole-window mask, so start it clean;
+        // otherwise one page is treated as part of the selected rectangle.
+        glClear(GL_STENCIL_BUFFER_BIT);
         enable_stencil();
 
         write_to_stencil();

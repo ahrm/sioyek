@@ -26,6 +26,7 @@ class SelectionIndicator;
 class QLocalSocket;
 class QLineEdit;
 class QTextEdit;
+class QPlainTextEdit;
 class QTimer;
 class QDragEvent;
 class QDropEvent;
@@ -93,9 +94,19 @@ struct TextUnderPointerInfo{
 
 struct BookmarkMoveData {
     int index;
+    int resize_edges = 0; // left, right, top, bottom
     AbsoluteDocumentPos initial_begin_position;
     AbsoluteDocumentPos initial_end_position;
     AbsoluteDocumentPos initial_mouse_position;
+    std::optional<NoteArrow> initial_arrow;
+};
+
+enum class NoteArrowDragPart { Tip, Control1, Control2, PlacingTip };
+
+struct NoteArrowDragData {
+    int bookmark_index;
+    NoteArrowDragPart part;
+    std::optional<NoteArrow> original_arrow;
 };
 
 struct FixedVelocityState {
@@ -256,6 +267,8 @@ public:
     std::optional<AbsoluteDocumentPos> rect_select_end = {};
 
     std::optional<BookmarkMoveData> bookmark_move_data = {};
+    int placing_note_arrow_index = -1;
+    std::optional<NoteArrowDragData> note_arrow_drag;
     std::optional<PortalMoveData> portal_move_data = {};
 
     // when set, mouse wheel moves the ruler
@@ -304,6 +317,7 @@ public:
     // the index of highlight in doc()->get_highlights() that is selected. This is used to
     // delete/edit highlights e.g. by selecting a highlight by clicking on it and then executing `delete_highlight`
     int selected_highlight_index = -1;
+    std::optional<AbsoluteDocumentPos> selected_rectangle_point = {};
     int selected_bookmark_index = -1;
     int selected_portal_index = -1;
 
@@ -353,6 +367,7 @@ public:
     QWidget* text_command_line_edit_container = nullptr;
     QLabel* text_command_line_edit_label = nullptr;
     QLineEdit* text_command_line_edit = nullptr;
+    QPlainTextEdit* freetext_editor = nullptr;
     QLabel* command_hints_label = nullptr;
     QLabel* status_label_left = nullptr;
     QLabel* status_label_right = nullptr;
@@ -456,11 +471,22 @@ public:
     void set_main_document_view_state(DocumentViewState new_view_state);
     void handle_click(WindowPos pos);
 
-    void update_selected_bookmark_font_size();
+    void update_selected_bookmark_font_size(float factor);
+    bool eventFilter(QObject* obj, QEvent* event) override;
+    void show_freetext_editor();
+    void update_freetext_editor_geometry();
+    void finish_freetext_edit();
+    int freetext_resize_edges_at(WindowPos pos);
     //bool eventFilter(QObject* obj, QEvent* event) override;
     void set_command_textbox_text(const std::wstring& txt);
     void change_selected_highlight_type(char new_type);
     void change_selected_bookmark_text(const std::wstring& new_text);
+    void change_selected_bookmark_color(char type);
+    void begin_note_arrow();
+    void delete_selected_note_arrow();
+    int note_arrow_handle_at(WindowPos pos);
+    int note_arrow_tip_at(WindowPos pos);
+    void move_note_arrow_handle(AbsoluteDocumentPos pos);
     void change_selected_highlight_text_annot(const std::wstring& new_text);
     char get_current_selected_highlight_type();
     void show_textbar(const std::wstring& command_name, const std::wstring& initial_value = L"", bool is_password = false);
@@ -702,6 +728,7 @@ public:
     void hande_turn_off_all_drawings();
     void handle_toggle_drawing_mask(char symbol);
     void show_command_palette();
+    void show_keybindings();
 
     DocumentPos get_document_pos_under_window_pos(WindowPos window_pos);
     AbsoluteDocumentPos get_absolute_document_pos_under_window_pos(WindowPos window_pos);
@@ -777,6 +804,9 @@ public:
     void handle_drawing_move(QPoint pos, float pressure);
     void start_drawing();
     void finish_drawing(QPoint pos);
+    void draw_rectangle(AbsoluteRect rect);
+    void delete_rectangle(AbsoluteDocumentPos point);
+    void select_rectangle_at(AbsoluteDocumentPos point);
     void handle_pen_drawing_event(QTabletEvent* te);
     void select_freehand_drawings(AbsoluteRect rect);
     void delete_freehand_drawings(AbsoluteRect rect);
@@ -959,6 +989,7 @@ public:
     void add_password(std::wstring path, std::string password);
     void handle_fit_to_page_width(bool smart);
     int current_document_page_count();
+    bool has_active_search();
     void goto_search_result(int nth_next_result, bool overview=false);
     void set_should_highlight_words(bool should_highlight_words);
     void toggle_highlight_links();

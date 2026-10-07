@@ -110,7 +110,7 @@ jobs:
             ref: development
 
     - name: Install dependencies
-      run: sudo apt install libharfbuzz-dev libxrandr-dev libxi-dev libglu1-mesa-dev fuse libxcb-cursor0 libspeechd2
+      run: sudo apt install libharfbuzz-dev libdjvulibre-dev pkg-config libxrandr-dev libxi-dev libglu1-mesa-dev fuse libxcb-cursor0 libspeechd2
       
     - name: Install Qt
       uses: jurplel/install-qt-action@v4

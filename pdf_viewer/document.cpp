@@ -55,6 +55,7 @@ extern Path standard_data_path;
 extern bool VERBOSE;
 extern float FREETEXT_BOOKMARK_COLOR[3];
 extern float FREETEXT_BOOKMARK_FONT_SIZE;
+extern std::wstring FREETEXT_BOOKMARK_FONT_FACE;
 extern std::wstring SHARED_DATABASE_PATH;
 extern bool DEBUG;
 extern bool EXACT_HIGHLIGHT_SELECT;
@@ -228,7 +229,9 @@ int Document::add_incomplete_bookmark(BookMark incomplete_bookmark){
 std::string Document::add_pending_bookmark(int index, const std::wstring& desc) {
     BookMark& bookmark = bookmarks[index];
     bookmark.description = desc;
-    bookmark.font_size = FREETEXT_BOOKMARK_FONT_SIZE;
+    if (bookmark.font_size < 0) bookmark.font_size = FREETEXT_BOOKMARK_FONT_SIZE;
+    if (bookmark.font_face.empty()) bookmark.font_face = FREETEXT_BOOKMARK_FONT_FACE;
+    bookmark.y_offset_ = bookmark.begin_y;
     bookmark.update_creation_time();
 
     if (!db_manager->insert_bookmark_freetext(get_checksum(), bookmark)) {
@@ -260,6 +263,7 @@ void Document::add_freetext_bookmark_with_color(const std::wstring& desc, Absolu
     bookmark.color[1] = color[1];
     bookmark.color[2] = color[2];
     bookmark.font_size = font_size < 0 ? FREETEXT_BOOKMARK_FONT_SIZE : font_size;
+    bookmark.font_face = FREETEXT_BOOKMARK_FONT_FACE;
     bookmark.uuid = new_uuid_utf8();
     bookmark.update_creation_time();
 
@@ -1545,11 +1549,11 @@ std::optional<std::wstring> Document::get_equation_text_at_position(
     int>* out_range) {
 
 
-    std::wregex regex(L"\\([0-9]+(\\.[0-9]+)*\\)");
-    std::optional<std::wstring> match = get_regex_match_at_position(regex, flat_chars, position, out_range);
+    std::optional<std::wstring> match = get_regex_match_at_position(
+        get_equation_identifier_regex(), flat_chars, position, out_range);
 
     if (match) {
-        return match.value().substr(1, match.value().size() - 2);
+        return normalize_equation_identifier(match.value());
     }
     else {
         return {};
@@ -2137,6 +2141,25 @@ void Document::get_pdf_annotations(std::vector<BookMark>& pdf_bookmarks, std::ve
                     pdf_drawings.push_back(drawing);
                 }
             }
+            if (annot_type == pdf_annot_type::PDF_ANNOT_SQUARE) {
+                PagelessDocumentRect page_rect = pdf_bound_annot(context, annot);
+                AbsoluteRect rect = to_absolute(p, page_rect);
+                int n_channels;
+                float color[4];
+                pdf_annot_color(context, annot, &n_channels, color);
+                float thickness = pdf_annot_border(context, annot);
+
+                FreehandDrawing drawing;
+                drawing.type = get_highlight_color_type(color);
+                drawing.points = {
+                    FreehandDrawingPoint{ AbsoluteDocumentPos{ rect.x0, rect.y0 }, thickness },
+                    FreehandDrawingPoint{ AbsoluteDocumentPos{ rect.x1, rect.y0 }, thickness },
+                    FreehandDrawingPoint{ AbsoluteDocumentPos{ rect.x1, rect.y1 }, thickness },
+                    FreehandDrawingPoint{ AbsoluteDocumentPos{ rect.x0, rect.y1 }, thickness },
+                    FreehandDrawingPoint{ AbsoluteDocumentPos{ rect.x0, rect.y0 }, thickness },
+                };
+                pdf_drawings.push_back(drawing);
+            }
             if (annot_type == pdf_annot_type::PDF_ANNOT_TEXT) {
                 PagelessDocumentRect rect = pdf_bound_annot(context, annot);
                 AbsoluteRect absrect = to_absolute(p, rect);
@@ -2599,21 +2622,45 @@ void Document::embed_annotations(std::wstring new_file_path) {
 
     for (auto [page_number, drawings] : page_freehand_drawings) {
         for (auto drawing : drawings) {
+            if (drawing.points.empty()) {
+                continue;
+            }
+
             fz_page* page = load_cached_page(page_number);
             pdf_page* pdf_page = pdf_page_from_fz_page(context, page);
-            pdf_annot* drawing_annot = pdf_create_annot(context, pdf_page, PDF_ANNOT_INK);
-            std::vector<fz_point> points;
+            pdf_annot* drawing_annot;
 
-            for (auto point : drawing.points) {
-                DocumentPos docpos = absolute_to_page_pos_uncentered(point.pos);
-                if (docpos.page == page_number) {
-                    points.push_back(fz_point{ docpos.x, docpos.y });
+            if (drawing.is_rectangle()) {
+                drawing_annot = pdf_create_annot(context, pdf_page, PDF_ANNOT_SQUARE);
+                AbsoluteRect absolute_rect = drawing.bbox();
+                DocumentPos top_left = absolute_to_page_pos_uncentered(absolute_rect.top_left());
+                DocumentPos bottom_right = absolute_to_page_pos_uncentered(absolute_rect.bottom_right());
+                fz_rect page_rect = {
+                    std::min(top_left.x, bottom_right.x),
+                    std::min(top_left.y, bottom_right.y),
+                    std::max(top_left.x, bottom_right.x),
+                    std::max(top_left.y, bottom_right.y),
+                };
+                pdf_set_annot_rect(context, drawing_annot, page_rect);
+            }
+            else {
+                drawing_annot = pdf_create_annot(context, pdf_page, PDF_ANNOT_INK);
+                std::vector<fz_point> points;
+
+                for (auto point : drawing.points) {
+                    DocumentPos docpos = absolute_to_page_pos_uncentered(point.pos);
+                    if (docpos.page == page_number) {
+                        points.push_back(fz_point{ docpos.x, docpos.y });
+                    }
+                }
+
+                if (!points.empty()) {
+                    int count[1] = { static_cast<int>(points.size()) };
+                    pdf_set_annot_ink_list(context, drawing_annot, 1, count, &points[0]);
                 }
             }
 
-            int count[1] = { static_cast<int>(points.size()) };
             pdf_set_annot_border(context, drawing_annot, drawing.points[0].thickness);
-            pdf_set_annot_ink_list(context, drawing_annot, 1, count, &points[0]);
             if (drawing.type >= 'a' && drawing.type <= 'z') {
                 pdf_set_annot_color(context, drawing_annot, 3, &HIGHLIGHT_COLORS[3 * (drawing.type - 'a')]);
             }
@@ -3500,6 +3547,21 @@ void Document::add_freehand_drawing(FreehandDrawing new_drawing) {
     }
 }
 
+bool Document::delete_rectangle_at(AbsoluteDocumentPos point) {
+    int page = absolute_to_page_pos_uncentered(point).page;
+    std::lock_guard guard(drawings_mutex);
+    std::vector<FreehandDrawing>& drawings = page_freehand_drawings[page];
+
+    for (int i = static_cast<int>(drawings.size()) - 1; i >= 0; i--) {
+        if (drawings[i].is_rectangle() && drawings[i].bbox().contains(point)) {
+            drawings.erase(drawings.begin() + i);
+            is_drawings_dirty = true;
+            return true;
+        }
+    }
+    return false;
+}
+
 void Document::undo_freehand_drawing() {
     int most_recent_page_index = -1;
     QDateTime most_recent_page_time;
@@ -3538,8 +3600,11 @@ std::vector<SelectedObjectIndex> Document::get_page_intersecting_drawing_indices
         if (!mask[page_drawings[i].type - 'a']) {
             continue;
         }
+        if (page_drawings[i].is_rectangle() && page_drawings[i].bbox().intersects(absolute_rect)) {
+            indices.push_back(SelectedObjectIndex{ i, SelectedObjectType::Drawing });
+            continue;
+        }
         for (auto point : page_drawings[i].points) {
-            fz_point absolute_point = fz_point{ point.pos.x, point.pos.y };
             if (absolute_rect.contains(point.pos)) {
                 indices.push_back(SelectedObjectIndex{ i, SelectedObjectType::Drawing });
                 break;
@@ -3963,26 +4028,11 @@ int Document::get_portal_index_at_pos(AbsoluteDocumentPos abspos) {
 }
 
 int Document::get_bookmark_index_at_pos(AbsoluteDocumentPos abspos) {
-    for (int i = 0; i < bookmarks.size(); i++) {
-        if (bookmarks[i].begin_y != -1) {
-            if (bookmarks[i].end_y == -1) {
-
-                //if (fz_is_point_inside_rect({abspos.x, abspos.y}, bookmarks[i].get_rectangle())) {
-                if (bookmarks[i].get_rectangle().contains(abspos)) {
-                    return i;
-                }
-            }
-            else {
-                AbsoluteRect bookmark_rect;
-                bookmark_rect.x0 = bookmarks[i].begin_x;
-                bookmark_rect.y0 = bookmarks[i].begin_y;
-                bookmark_rect.x1 = bookmarks[i].end_x;
-                bookmark_rect.y1 = bookmarks[i].end_y;
-
-                if (fz_is_point_inside_rect({ abspos.x, abspos.y }, bookmark_rect)) {
-                    return i;
-                }
-            }
+    // Newer notes are painted last and should receive clicks first. Normalize
+    // legacy rectangles too: older builds stored reverse drags with flipped ends.
+    for (int i = static_cast<int>(bookmarks.size()) - 1; i >= 0; --i) {
+        if (bookmarks[i].begin_y != -1 && bookmarks[i].get_rectangle().contains(abspos)) {
+            return i;
         }
     }
     return -1;
@@ -3992,9 +4042,30 @@ void Document::update_bookmark_text(int index, const std::wstring& new_text, flo
     if ((index >= 0) && (index < bookmarks.size())) {
         if (db_manager->update_bookmark_change_text(bookmarks[index].uuid, new_text, new_font_size)) {
             bookmarks[index].description = new_text;
+            bookmarks[index].font_size = new_font_size;
             bookmarks[index].update_modification_time();
             is_annotations_dirty = true;
         }
+    }
+}
+
+void Document::update_bookmark_color(int index, const float color[3]) {
+    if (index >= 0 && index < bookmarks.size() &&
+        db_manager->update_bookmark_change_color(bookmarks[index].uuid, color)) {
+        for (int component = 0; component < 3; ++component) {
+            bookmarks[index].color[component] = color[component];
+        }
+        bookmarks[index].update_modification_time();
+        is_annotations_dirty = true;
+    }
+}
+
+void Document::update_bookmark_arrow(int index, const std::optional<NoteArrow>& arrow) {
+    if (index < 0 || index >= bookmarks.size()) return;
+    if (db_manager->update_bookmark_arrow(bookmarks[index].uuid, arrow)) {
+        bookmarks[index].arrow = arrow;
+        bookmarks[index].update_modification_time();
+        is_annotations_dirty = true;
     }
 }
 
@@ -4321,7 +4392,8 @@ std::optional<DocumentPos> Document::find_abbreviation(std::wstring abbr, std::v
 
 int Document::find_reference_page_with_reference_text(std::wstring ref) {
 
-    QStringList parts = QString::fromStdWString(ref).split(QRegularExpression("[ \\w\\(\\);,]"));
+    QStringList parts = QString::fromStdWString(ref).split(
+        QRegularExpression("[\\s\\(\\);,]+"), Qt::SkipEmptyParts);
     QString largest_part = "";
     for (int i = 0; i < parts.size(); i++) {
         if (parts.at(i).size() > largest_part.size() ) {
@@ -4331,6 +4403,9 @@ int Document::find_reference_page_with_reference_text(std::wstring ref) {
 
 
     std::wstring query = largest_part.toStdWString();
+    if (query.empty()) {
+        return -1;
+    }
     auto searcher = std::default_searcher(query.begin(), query.end(), pred_case_sensitive);
 
     std::vector<int> found_indices;

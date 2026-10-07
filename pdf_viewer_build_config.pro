@@ -26,6 +26,22 @@ DEFINES += QT_3DINPUT_LIB QT_OPENGL_LIB QT_OPENGLEXTENSIONS_LIB QT_WIDGETS_LIB
 
 RESOURCES += resources.qrc
 
+packagesExist(ddjvuapi) {
+    CONFIG += link_pkgconfig
+    PKGCONFIG += ddjvuapi
+    DEFINES += SIOYEK_DJVU_SUPPORT
+    HEADERS += pdf_viewer/djvu_document.h
+    SOURCES += pdf_viewer/djvu_document.cpp
+}
+
+contains(DEFINES, SIOYEK_JKQT_MATHTEXT_SUPPORT) {
+    greaterThan(QT_MAJOR_VERSION, 5) {
+        LIBS += -lJKQTMathText6_Release -lJKQTCommon6_Release
+    } else {
+        LIBS += -lJKQTMathText5_Release -lJKQTCommon5_Release
+    }
+}
+
 SOURCES += \
         pdf_viewer/touchui/TouchSlider.cpp \
         pdf_viewer/touchui/TouchCheckbox.cpp \

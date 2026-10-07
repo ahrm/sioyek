@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=Sioyek
-Comment=PDF viewer for reading research papers and technical books
-Keywords=pdf;viewer;reader;research;
+Comment=Document viewer for reading research papers and technical books
+Keywords=pdf;djvu;viewer;reader;research;
 TryExec=sioyek
 Exec=sioyek %f
 StartupNotify=true
@@ -9,5 +9,5 @@ Terminal=false
 Type=Application
 Icon=sioyek-icon-linux
 Categories=Development;Viewer;
-MimeType=application/pdf;
+MimeType=application/pdf;image/vnd.djvu;
 StartupWMClass=sioyek
