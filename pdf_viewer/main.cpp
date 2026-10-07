@@ -960,6 +960,10 @@ int main(int argc, char* args[]) {
         for (auto window : windows) {
             window->validate_render();
             window->on_configs_changed(&changed_config_file_names);
+            // MainWidget is not a ConfigFileChangeListener, so the notify
+            // above never reaches it: the status bar / command line styles
+            // (colours, font) were only refreshed by an explicit reload_config.
+            window->on_config_file_changed(&config_manager);
         }
         add_paths_to_file_system_watcher(pref_file_watcher, default_config_path, user_config_paths);
         });
