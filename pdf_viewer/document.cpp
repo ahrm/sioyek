@@ -1012,8 +1012,8 @@ void Document::reload(std::string password) {
 bool Document::open(bool* invalid_flag, bool force_load_dimensions, std::string password, bool temp) {
     load_extras();
 
-    last_update_time = QDateTime::currentDateTime();
     if (doc == nullptr) {
+        last_update_time = QDateTime::currentDateTime();
         fz_try(context) {
             //			doc = fz_open_document(context, utf8_encode(file_name).c_str());
             doc = open_document_with_file_name(context, file_name);
