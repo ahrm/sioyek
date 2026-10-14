@@ -863,6 +863,19 @@ public:
         }
     }
 
+    virtual void on_cancel() override{
+        int current_index = get_current_executing_command_index();
+        if (current_index != -1) {
+            commands[current_index]->on_cancel();
+        }
+
+        for (auto& command : commands) {
+            if (command->is_done) {
+                *command->is_done = true;
+            }
+        }
+    }
+
     std::string get_pending_name() {
         
         if (name.size() > 0 || commands.size() == 0) {
@@ -1495,6 +1508,7 @@ public:
         if (INCREMENTAL_SEARCH) {
             widget->goto_mark('/');
         }
+        TextCommand::on_cancel();
     }
 
     void perform() {
@@ -2150,6 +2164,7 @@ public:
         if (pending_index != -1) {
             widget->doc()->undo_pending_bookmark(pending_index);
         }
+        Command::on_cancel();
     }
 
     void perform() {
@@ -2396,6 +2411,7 @@ public:
         if (pending_index != -1) {
             widget->doc()->undo_pending_bookmark(pending_index);
         }
+        Command::on_cancel();
     }
 
     void perform() {
@@ -3662,6 +3678,7 @@ public:
             widget->doc()->get_bookmarks()[index].description = initial_text;
             widget->doc()->get_bookmarks()[index].font_size = initial_font_size;
         }
+        TextCommand::on_cancel();
     }
 
     std::optional<Requirement> next_requirement(MainWidget* widget) {
@@ -4293,6 +4310,7 @@ public:
 
     void on_cancel() override {
         widget->set_should_highlight_words(false);
+        Command::on_cancel();
     }
 
     void pre_perform() override {
@@ -4922,6 +4940,7 @@ KeyboardSelectPointCommand::KeyboardSelectPointCommand(MainWidget* w, std::uniqu
 void KeyboardSelectPointCommand::on_cancel() {
     origin->on_cancel();
     widget->set_highlighted_tags({});
+    Command::on_cancel();
 
 }
 
@@ -5097,6 +5116,7 @@ public:
 
     void on_cancel() override {
         widget->set_highlighted_tags({});
+        Command::on_cancel();
 
     }
 
@@ -8339,7 +8359,9 @@ void Command::pre_perform() {
 }
 
 void Command::on_cancel() {
-
+    if (is_done){
+        *is_done = true;
+    }
 }
 
 void Command::run() {

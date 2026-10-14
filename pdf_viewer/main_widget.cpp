@@ -1,4 +1,4 @@
-﻿// deduplicate database code
+// deduplicate database code
 // make sure jsons exported by previous sioyek versions can be imported
 // maybe: use a better method to handle deletion of canceled download portals
 // change find_closest_*_index and argminf to use the fact that the list is sorted and speed up the search (not important if there are not a ridiculous amount of highlight/bookmarks)
@@ -1280,10 +1280,16 @@ MainWidget::MainWidget(fz_context* mupdf_context,
                     (doc->get_milies_since_last_edit_time() > RELOAD_INTERVAL_MILISECONDS)) {
 
                     if (is_doc_valid(this->mupdf_context, utf8_encode(doc->get_path()))) {
+                        pop_all_widgets();
                         doc->reload();
-                        this->pdf_renderer->clear_cache();
-                        main_document_view->fill_cached_virtual_rects(true);
-                        invalidate_render();
+                        // update all the main_widgets that are using this document
+                        for (auto window : windows) {
+                            if (window->doc() == doc) {
+                                window->pdf_renderer->clear_cache();
+                                window->main_document_view->fill_cached_virtual_rects(true);
+                                window->invalidate_render();
+                            }
+                        }
                     }
                 }
             }
@@ -1832,7 +1838,7 @@ void MainWidget::validate_render() {
                     main_document_view->get_document()->get_accum_page_height(current_page) +
                     main_document_view->get_document()->get_page_height(current_page) / 2 + statusbar_factor);
             }
-            if (IGNORE_WHITESPACE_IN_PRESENTATION_MODE) {
+            if (IGNORE_WHITESPACE_IN_PRESENTATION_MODE && !main_document_view->is_two_page_mode()) {
                 main_document_view->fit_to_page_height(true);
             }
             else {
@@ -2382,8 +2388,7 @@ void MainWidget::update_command_hints_position() {
 
     const int outer_margin = 12;
     int available_width = std::max(main_window_width - (outer_margin * 2), 120);
-    int preferred_width = std::max(main_window_width / 3, 220);
-    command_hints_label->setMaximumWidth(std::min(available_width, preferred_width));
+    command_hints_label->setMaximumWidth(std::min(available_width, available_width));
     command_hints_label->adjustSize();
 
     int bottom_offset = outer_margin;
@@ -4066,6 +4071,14 @@ void MainWidget::push_current_widget(QWidget* new_widget) {
     current_widget_stack.push_back(new_widget);
 }
 
+void MainWidget::pop_all_widgets(){
+    while (!current_widget_stack.empty()) {
+        current_widget_stack.back()->hide();
+        current_widget_stack.back()->deleteLater();
+        current_widget_stack.pop_back();
+    }
+}
+
 void MainWidget::pop_current_widget(bool canceled) {
 
     if (current_widget_stack.size() > 0) {
@@ -5186,6 +5199,10 @@ void MainWidget::focus_rect(DocumentRect rect) {
 }
 
 void MainWidget::focus_text(int page, const std::wstring& text) {
+    if (page < 0 || page >= doc()->num_pages()) {
+        return;
+    }
+
     std::vector<std::wstring> line_texts;
     std::vector<AbsoluteRect> line_rects;
     line_rects = main_document_view->get_document()->get_page_lines(page, &line_texts);
@@ -6320,8 +6337,9 @@ void MainWidget::handle_goto_toc() {
             else {
 
                 std::vector<int> selected_index = main_document_view->get_current_chapter_recursive_index();
+                auto* cached_toc_model = main_document_view->get_document()->get_toc_model();
                 //if (!TOUCH_MODE) {
-                set_current_widget(new FilteredTreeSelect<int>(FUZZY_SEARCHING, main_document_view->get_document()->get_toc_model(),
+                set_current_widget(new FilteredTreeSelect<int>(FUZZY_SEARCHING, cached_toc_model,
                     [&](const std::vector<int>& indices) {
                         TocNode* toc_node = get_toc_node_from_indices(main_document_view->get_document()->get_toc(),
                         indices);

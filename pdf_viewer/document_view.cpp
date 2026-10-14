@@ -744,6 +744,8 @@ void DocumentView::move_pages(int num_pages) {
     int padding = two_page_mode ? page_space_y : PAGE_PADDINGS;
 
     move_virtual(0, num_pages * (current_document->get_page_height(current_page) + padding));
+    // this is only so that we don't go out of bounds
+    move_absolute(0, 0);
 }
 
 void DocumentView::move_screens(int num_screens) {
@@ -995,6 +997,17 @@ void DocumentView::fit_to_page_height_width_minimum(int statusbar_height) {
     int cp = get_center_page_number();
     if (cp == -1) return;
 
+    if (two_page_mode) {
+        fill_cached_virtual_rects();
+        int other_page = cp + ((cp + static_cast<int>(RECTO_VERSO_ADJUSTMENT)) % 2 ? -1 : 1);
+        VirtualRect bounds = cached_virtual_rects[cp];
+        if (other_page >= 0 && other_page < current_document->num_pages())
+            bounds = bounds.union_rect(cached_virtual_rects[other_page]);
+        set_zoom_level(std::min(view_width / bounds.width(), (view_height - statusbar_height) / bounds.height()), true);
+        offset.x = -bounds.center().x;
+        offset.y = bounds.center().y + statusbar_height / (2.0f * zoom_level);
+        return;
+    }
     int page_width = current_document->get_page_width(cp);
     int page_height = current_document->get_page_height(cp);
 
@@ -1586,9 +1599,9 @@ std::optional<AbsoluteRect> DocumentView::get_control_rect() {
 std::optional<AbsoluteRect> DocumentView::shrink_selection(bool is_begin, bool word) {
     if (selected_character_rects.size() > 1) {
         if (word) {
-            int page;
             int index = is_begin ? 0 : selected_character_rects.size() - 1;
             DocumentRect page_rect = selected_character_rects[index].to_document(current_document);
+            int page = page_rect.page;
             if (page >= 0) {
                 fz_stext_page* stext_page = current_document->get_stext_with_page_number(page);
                 std::optional<DocumentRect> new_rect_ = find_shrinking_rect_word(is_begin, stext_page, page_rect);
