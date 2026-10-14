@@ -25,6 +25,7 @@
 #include <qstringlist.h>
 #include <qcommandlineparser.h>
 #include <qdir.h>
+#include <qfileinfo.h>
 #include <qurl.h>
 #include <qnetworkaccessmanager.h>
 #include <qnetworkrequest.h>
@@ -1236,6 +1237,84 @@ void open_web_url(const QString& url_string) {
 void open_web_url(const std::wstring& url_string) {
     QString qurl_string = QString::fromStdWString(url_string);
     open_web_url(qurl_string);
+}
+
+bool is_file_uri(const std::string& uri) {
+    return QString::fromStdString(uri).startsWith("file:", Qt::CaseInsensitive);
+}
+
+FileLinkTarget resolve_file_link(const std::string& uri, const std::wstring& current_document_path) {
+    // mupdf turns scheme-less URI actions into "file://" + uri, so "/abs/clip.mp3" becomes
+    // "file:///abs/clip.mp3" and "rel/clip.mp3" becomes "file://rel/clip.mp3". The latter is not
+    // a well-formed URL (the first component would be the host), so we treat everything after the
+    // prefix as a path.
+    QString path_uri = QString::fromStdString(uri);
+    if (path_uri.startsWith("file://", Qt::CaseInsensitive)) {
+        path_uri = path_uri.mid(7);
+    }
+    else if (path_uri.startsWith("file:", Qt::CaseInsensitive)) {
+        path_uri = path_uri.mid(5);
+    }
+
+    FileLinkTarget res;
+    int hash_index = path_uri.indexOf('#');
+    if (hash_index >= 0) {
+        res.fragment = path_uri.mid(hash_index + 1);
+        path_uri = path_uri.left(hash_index);
+    }
+
+    QString base_dir = QFileInfo(QString::fromStdWString(current_document_path)).absolutePath();
+    auto make_absolute = [&](QString path) {
+        // file:///C:/foo.pdf on windows
+        if (path.size() >= 3 && path[0] == '/' && path[1].isLetter() && path[2] == ':') {
+            path = path.mid(1);
+        }
+        if (QDir::isAbsolutePath(path)) {
+            return QDir::cleanPath(path);
+        }
+        return QDir::cleanPath(QDir(base_dir).filePath(path));
+    };
+
+    res.path = make_absolute(QUrl::fromPercentEncoding(path_uri.toUtf8()));
+    if (!QFileInfo::exists(res.path)) {
+        // a literal '%' in the file name may have been mangled by percent-decoding
+        QString raw_path = make_absolute(path_uri);
+        if (QFileInfo::exists(raw_path)) {
+            res.path = raw_path;
+        }
+    }
+    return res;
+}
+
+bool can_mupdf_open_file(fz_context* ctx, const QString& path) {
+    QByteArray path_utf8 = path.toUtf8();
+    const fz_document_handler* volatile handler = nullptr;
+    fz_try(ctx) {
+        handler = fz_recognize_document_content(ctx, path_utf8.constData());
+    }
+    fz_catch(ctx) {
+        handler = nullptr;
+    }
+    return handler != nullptr;
+}
+
+bool file_extension_in_list(const QString& path, const std::wstring& comma_separated_extensions) {
+    QString extension = QFileInfo(path).suffix().toLower();
+    if (extension.size() == 0) {
+        return false;
+    }
+
+    QStringList allowed_extensions = QString::fromStdWString(comma_separated_extensions).split(',');
+    for (QString allowed : allowed_extensions) {
+        allowed = allowed.trimmed().toLower();
+        if (allowed.startsWith('.')) {
+            allowed = allowed.mid(1);
+        }
+        if (allowed == extension) {
+            return true;
+        }
+    }
+    return false;
 }
 
 

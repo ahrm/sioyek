@@ -90,6 +90,18 @@ void sleep_ms(unsigned int ms);
 void open_file_url(const std::wstring& file_url, bool show_fail_message);
 void open_web_url(const std::wstring& web_url);
 
+struct FileLinkTarget {
+    // absolute, cleaned path of the linked file
+    QString path;
+    // the part after '#' (e.g. "page=3" or "nameddest=intro"), empty if there is none
+    QString fragment;
+};
+
+bool is_file_uri(const std::string& uri);
+FileLinkTarget resolve_file_link(const std::string& uri, const std::wstring& current_document_path);
+bool can_mupdf_open_file(fz_context* ctx, const QString& path);
+bool file_extension_in_list(const QString& path, const std::wstring& comma_separated_extensions);
+
 void open_file(const std::wstring& path, bool show_fail_message);
 void search_custom_engine(const std::wstring& search_string, const std::wstring& custom_engine_url);
 void search_google_scholar(const std::wstring& search_string);

@@ -498,6 +498,7 @@ public:
 
     void show_password_prompt_if_required();
     void handle_link_click(const PdfLink& link);
+    void handle_file_link_click(const std::string& uri);
 
     void on_next_text_suggestion();
     void on_prev_text_suggestion();

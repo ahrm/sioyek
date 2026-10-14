@@ -896,6 +896,22 @@ The command to use when trying to do inverse search into a LaTeX
 document. Uncomment and provide your own command. %1 expands to the
 name of the file and %2 expands to the line number.
 .HP
+.B open_external_file_links
+.I boolean
+
+If set to 1, clicking a link to a local file that sioyek can not display
+(for example an audio file) opens it with the operating system's default
+application, provided its extension is listed in
+external_file_link_extensions. Links to documents that sioyek can open are
+always opened in sioyek.
+.HP
+.B external_file_link_extensions
+.I string
+
+Comma-separated list of file extensions that open_external_file_links is
+allowed to hand to the operating system. Links to files with other
+extensions show a message instead of opening the file.
+.HP
 .B zoom_inc_factor
 .I float
 

@@ -211,6 +211,8 @@ bool EXACT_HIGHLIGHT_SELECT = false;
 bool SHOW_DOC_PATH = false;
 float FASTREAD_OPACITY = 0.5f;
 bool SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE = true;
+bool OPEN_EXTERNAL_FILE_LINKS = true;
+std::wstring EXTERNAL_FILE_LINK_EXTENSIONS = L"mp3,m4a,aac,ogg,oga,opus,wav,flac,mp4,mkv,webm,mov,png,jpg,jpeg,gif,svg,txt,md,html";
 bool SINGLE_CLICK_SELECTS_WORDS = false;
 bool USE_LEGACY_KEYBINDS = false;
 bool MULTILINE_MENUS = true;
@@ -1013,6 +1015,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
     add_bool(L"exact_highlight_select", &EXACT_HIGHLIGHT_SELECT);
     add_bool(L"show_doc_path", &SHOW_DOC_PATH);
     add_bool(L"should_warn_about_user_key_override", &SHOULD_WARN_ABOUT_USER_KEY_OVERRIDE);
+    add_bool(L"open_external_file_links", &OPEN_EXTERNAL_FILE_LINKS);
     add_bool(L"single_click_selects_words", &SINGLE_CLICK_SELECTS_WORDS);
     add_bool(L"allow_horizontal_drag_when_document_is_small", &ALLOW_HORIZONTAL_DRAG_WHEN_DOCUMENT_IS_SMALL);
     add_bool(L"right_click_context_menu", &RIGHT_CLICK_CONTEXT_MENU);
@@ -1061,6 +1064,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
     add_string(L"item_list_prefix", &ITEM_LIST_PREFIX);
     add_string(L"inverse_search_command", &INVERSE_SEARCH_COMMAND);
     add_string(L"libgen_address", &LIBGEN_ADDRESS);
+    add_string(L"external_file_link_extensions", &EXTERNAL_FILE_LINK_EXTENSIONS);
     add_string(L"shared_database_path", &SHARED_DATABASE_PATH);
     add_string(L"ruler_display_mode", &RULER_DISPLAY_MODE);
     add_string(L"ui_font", &UI_FONT_FACE_NAME);

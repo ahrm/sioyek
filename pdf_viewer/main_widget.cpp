@@ -290,6 +290,9 @@ extern int RELOAD_INTERVAL_MILISECONDS;
 
 const unsigned int INTERVAL_TIME = 200;
 
+extern bool OPEN_EXTERNAL_FILE_LINKS;
+extern std::wstring EXTERNAL_FILE_LINK_EXTENSIONS;
+
 #ifdef Q_OS_MACOS
 extern float MACOS_TITLEBAR_COLOR[3];
 extern bool MACOS_HIDE_TITLEBAR;
@@ -4736,53 +4739,66 @@ void MainWidget::on_new_paper_added(const std::wstring& file_path) {
         invalidate_render();
     }
 }
+void MainWidget::handle_file_link_click(const std::string& uri) {
+    FileLinkTarget target = resolve_file_link(uri, doc()->get_path());
+    std::wstring target_path = target.path.toStdWString();
+    QFileInfo target_info(target.path);
+
+    if (!target_info.exists()) {
+        show_error_message(L"File not found: " + target_path);
+        return;
+    }
+
+    if (!target_info.isFile() || !can_mupdf_open_file(mupdf_context, target.path)) {
+        // not something we can display, hand it over to the operating system
+        if (!OPEN_EXTERNAL_FILE_LINKS) {
+            show_error_message(L"Not opening " + target_path + L" because open_external_file_links is disabled");
+            return;
+        }
+        if (!file_extension_in_list(target.path, EXTERNAL_FILE_LINK_EXTENSIONS)) {
+            show_error_message(L"Not opening " + target_path + L" because its extension is not in external_file_link_extensions");
+            return;
+        }
+        open_file_url(target_path, true);
+        return;
+    }
+
+    Path linked_file_path(target_path);
+    int page = 0;
+    if (target.fragment.startsWith("nameddest")) {
+        QString standard_uri = QString::fromStdString(uri);
+        if (standard_uri.startsWith("file:") && !(standard_uri.startsWith("file://"))) {
+            standard_uri = "file://" + standard_uri.mid(5);
+        }
+
+        Document* linked_doc = document_manager->get_document(linked_file_path.get_path());
+        if (linked_doc && !linked_doc->doc) {
+            linked_doc->open(nullptr);
+        }
+
+        if (linked_doc && linked_doc->doc) {
+            ParsedUri parsed_uri = parse_uri(mupdf_context, linked_doc->doc, standard_uri.toStdString());
+            page = parsed_uri.page - 1;
+            push_state();
+            open_document_at_location(linked_file_path, page, parsed_uri.x, parsed_uri.y, {});
+            return;
+        }
+    }
+    else if (target.fragment.startsWith("page=")) {
+        page = target.fragment.mid(5).toInt() - 1;
+    }
+    push_state();
+    open_document_at_location(linked_file_path, page, {}, {}, {});
+}
+
 void MainWidget::handle_link_click(const PdfLink& link) {
     if (link.uri.substr(0, 4).compare("http") == 0) {
         open_web_url(utf8_decode(link.uri));
         return;
     }
 
-    if (link.uri.substr(0, 4).compare("file") == 0) {
-        QString path_uri;
-        if (link.uri.substr(0, 7) == "file://") {
-            path_uri = QString::fromStdString(link.uri.substr(7, link.uri.size() - 7)); // skip file://
-        }
-        else {
-            path_uri = QString::fromStdString(link.uri.substr(5, link.uri.size() - 5)); // skip file:
-        }
-        auto parts = path_uri.split('#');
-        std::wstring path_part = parts.at(0).toStdWString();
-        auto docpath = doc()->get_path();
-        Path linked_file_path = Path(doc()->get_path()).file_parent().slash(path_part);
-        int page = 0;
-        if (parts.size() > 1) {
-            if (parts.at(1).startsWith("nameddest")) {
-                QString standard_uri = QString::fromStdString(link.uri);
-                if (standard_uri.startsWith("file:") && !(standard_uri.startsWith("file://"))) {
-                    standard_uri = "file://" + standard_uri.mid(5);
-                }
-
-                Document* linked_doc = document_manager->get_document(linked_file_path.get_path());
-                if (!linked_doc->doc) {
-                    linked_doc->open(nullptr);
-                }
-
-                if (linked_doc && linked_doc->doc) {
-                    ParsedUri parsed_uri = parse_uri(mupdf_context, linked_doc->doc, standard_uri.toStdString());
-                    page = parsed_uri.page - 1;
-                    push_state();
-                    open_document_at_location(linked_file_path, page, parsed_uri.x, parsed_uri.y, {});
-                    return;
-                }
-            }
-            else {
-                std::string page_string = parts.at(1).toStdString();
-                page_string = page_string.substr(5, page_string.size() - 5);
-                page = QString::fromStdString(page_string).toInt() - 1;
-            }
-        }
-        push_state();
-        open_document_at_location(linked_file_path, page, {}, {}, {});
+    if (is_file_uri(link.uri)) {
+        handle_file_link_click(link.uri);
         return;
     }
 
@@ -6593,18 +6609,7 @@ void MainWidget::handle_open_link(const std::wstring& text, bool copy) {
             copy_to_clipboard(utf8_decode(link.uri));
         }
         else {
-            if (QString::fromStdString(link.uri).startsWith("http")) {
-                open_web_url(utf8_decode(link.uri));
-            }
-            else {
-                auto [page, offset_x, offset_y] = parse_uri(mupdf_context, doc()->doc, link.uri);
-                if (main_document_view->is_presentation_mode()) {
-                    goto_page_with_page_number(page - 1);
-                }
-                else {
-                    handle_goto_link_with_page_and_offset(page - 1, offset_y, offset_x);
-                }
-            }
+            handle_link_click(link);
         }
     }
     reset_highlight_links();
