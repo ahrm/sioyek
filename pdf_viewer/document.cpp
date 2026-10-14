@@ -3215,6 +3215,12 @@ bool Document::is_reflowable() {
 }
 
 void Document::clear_document_caches() {
+    if (document_indexing_thread.has_value()) {
+        stop_indexing();
+        document_indexing_thread.value().join();
+        document_indexing_thread.reset();
+    }
+
     cached_num_pages = {};
     cached_fastread_highlights.clear();
     cached_line_texts.clear();
