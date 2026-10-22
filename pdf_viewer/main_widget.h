@@ -14,6 +14,7 @@
 #include <qquickwidget.h>
 #include <qjsondocument.h>
 #include <qmainwindow.h>
+#include <QElapsedTimer>
 
 #include "book.h"
 #include "input.h"
@@ -287,6 +288,8 @@ public:
     // `smooth_scroll_speed` is used to keep track of our speed in this mode
     bool smooth_scroll_mode = false;
     float smooth_scroll_speed = 0.0f;
+    // Keep smooth scrolling independent of wall-clock changes and touch movement timing.
+    QElapsedTimer smooth_scroll_timer;
 
     // the timer which periodically checks if the UI/rendering needs updating. Normally the timer value is
     // set to be INTERVAL_TIME (which is 200ms at the time of writing this comment), however, it is set to a much
@@ -409,8 +412,8 @@ public:
     // so that we don't update the rendering too fast
     QTime last_text_select_time = QTime::currentTime();
 
-    // last time we updated `smooth_scroll_speed` 
-    QTime last_speed_update_time = QTime::currentTime();
+    // Last update of touch/smooth movement velocity (separate from smooth scroll mode).
+    QElapsedTimer movement_timer;
 
     QJSEngine* sync_js_engine = nullptr;
     std::vector<QJSEngine*> available_async_engines;

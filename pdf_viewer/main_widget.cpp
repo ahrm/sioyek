@@ -575,7 +575,7 @@ void MainWidget::handle_selection_mouse_edge_scrolling(QMouseEvent* mouse_event)
         validation_interval_timer->setInterval(0);
         set_fixed_velocity(SMOOTH_MOVE_MAX_VELOCITY, 0);
         if (!is_mouse_edge_scrolling){
-            last_speed_update_time = QTime::currentTime();
+            movement_timer.start();
         }
         is_mouse_edge_scrolling = true;
         validate_render();
@@ -585,7 +585,7 @@ void MainWidget::handle_selection_mouse_edge_scrolling(QMouseEvent* mouse_event)
         validation_interval_timer->setInterval(0);
         set_fixed_velocity(-SMOOTH_MOVE_MAX_VELOCITY, 0);
         if (!is_mouse_edge_scrolling){
-            last_speed_update_time = QTime::currentTime();
+            movement_timer.start();
         }
         is_mouse_edge_scrolling = true;
         validate_render();
@@ -917,6 +917,7 @@ MainWidget::MainWidget(fz_context* mupdf_context,
     should_quit(should_quit_ptr),
     command_manager(command_manager)
 {
+    movement_timer.start();
     //main_widget->quickWindow()->setGraphicsApi(QSGRendererInterface::OpenGL);
     //quickWindow()->setGraphicsApi(QSGRendererInterface::OpenGL);
     window_id = next_window_id;
@@ -1738,9 +1739,9 @@ void MainWidget::validate_render() {
 
     if (smooth_scroll_mode) {
         if (main_document_view_has_document()) {
-            float secs = static_cast<float>(-QTime::currentTime().msecsTo(last_speed_update_time)) / 1000.0f;
+            float secs = static_cast<float>(smooth_scroll_timer.restart()) / 1000.0f;
 
-            if (secs > 0.1f) {
+            if (secs < 0.0f || secs > 0.1f) {
                 secs = 0.0f;
             }
 
@@ -1765,14 +1766,10 @@ void MainWidget::validate_render() {
                 smooth_scroll_speed += secs * accel;
                 if (smooth_scroll_speed > 0) smooth_scroll_speed = 0;
             }
-
-
-            last_speed_update_time = QTime::currentTime();
         }
     }
     if (is_moving()) {
-        auto current_time = QTime::currentTime();
-        float secs = current_time.msecsTo(last_speed_update_time) / 1000.0f;
+        float secs = -static_cast<float>(movement_timer.restart()) / 1000.0f;
         float move_x = secs * velocity_x;
         float move_y = secs * velocity_y;
 
@@ -1810,7 +1807,6 @@ void MainWidget::validate_render() {
         if (!is_moving()) {
             validation_interval_timer->setInterval(INTERVAL_TIME);
         }
-        last_speed_update_time = current_time;
 
     }
     if (!isVisible()) {
@@ -2567,7 +2563,7 @@ void MainWidget::handle_left_click(WindowPos click_pos, bool down, bool is_shift
                 if (is_moving()) {
                     validation_interval_timer->setInterval(0);
                 }
-                last_speed_update_time = QTime::currentTime();
+                movement_timer.start();
             }
         }
 
@@ -6713,6 +6709,7 @@ void MainWidget::handle_toggle_smooth_scroll_mode() {
     smooth_scroll_mode = !smooth_scroll_mode;
 
     if (smooth_scroll_mode) {
+        smooth_scroll_timer.start();
         validation_interval_timer->setInterval(16);
     }
     else {
@@ -11334,19 +11331,6 @@ void MainWidget::focus_on_character_offset_into_document(int character_offset_in
     invalidate_render();
 }
 
-//void MainWidget::handle_move_smooth_press(bool down) {
-//
-//    float mult = down ? -1 : 1;
-//
-//    velocity_y += mult * SMOOTH_MOVE_INITIAL_VELOCITY;
-//    if (std::abs(velocity_y) > SMOOTH_MOVE_MAX_VELOCITY) {
-//        if (down) velocity_y = -SMOOTH_MOVE_MAX_VELOCITY;
-//        else velocity_y = SMOOTH_MOVE_MAX_VELOCITY;
-//    }
-//    validation_interval_timer->setInterval(0);
-//    last_speed_update_time = QTime::currentTime();
-//}
-
 void MainWidget::handle_move_smooth_horizontal_hold(bool left) {
 
     float max_velocity = left ? -SMOOTH_MOVE_MAX_VELOCITY : SMOOTH_MOVE_MAX_VELOCITY;
@@ -11359,7 +11343,7 @@ void MainWidget::handle_move_smooth_horizontal_hold(bool left) {
     }
 
     validation_interval_timer->setInterval(0);
-    last_speed_update_time = QTime::currentTime();
+    movement_timer.start();
 }
 
 void MainWidget::handle_move_smooth_hold(bool down) {
@@ -11374,7 +11358,7 @@ void MainWidget::handle_move_smooth_hold(bool down) {
     }
 
     validation_interval_timer->setInterval(0);
-    last_speed_update_time = QTime::currentTime();
+    movement_timer.start();
 }
 
 void MainWidget::handle_toggle_two_page_mode() {
@@ -11522,7 +11506,7 @@ void MainWidget::set_fixed_velocity(float vel_y, float vel_x, std::optional<floa
     is_velocity_fixed = true;
 
     smooth_y_move_amount = y_move_amount;
-    last_speed_update_time = QTime::currentTime();
+    movement_timer.start();
 
     if (vel_y == 0 && vel_x == 0) {
         is_velocity_fixed = false;
