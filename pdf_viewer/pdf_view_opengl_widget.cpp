@@ -1963,6 +1963,13 @@ bool PdfViewOpenGLWidget::get_is_searching(float* prog) {
     return true;
 }
 
+bool PdfViewOpenGLWidget::get_is_search_done() {
+    search_results_mutex.lock();
+    bool done = !is_search_cancelled && !is_searching;
+    search_results_mutex.unlock();
+    return done;
+}
+
 void PdfViewOpenGLWidget::search_text(const std::wstring& text, SearchCaseSensitivity case_sensitive, bool regex, std::optional<std::pair<int, int>> range) {
 
     if (!document_view) return;

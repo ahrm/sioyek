@@ -1462,11 +1462,15 @@ std::wstring MainWidget::get_status_string(bool is_right) {
             status_label->show();
         }
 
-        // show the 0th result if there are no results and the index + 1 otherwise
         if (opengl_widget->get_is_searching(&progress)) {
-
-            int result_index = opengl_widget->get_num_search_results() > 0 ? opengl_widget->get_current_search_result_index() + 1 : 0;
-            status_string.replace("%{search_results}", " | showing result " + QString::number(result_index) + " / " + QString::number(num_search_results));
+            if (num_search_results == 0 && opengl_widget->get_is_search_done()) {
+                status_string.replace("%{search_results}", " | no results found");
+            }
+            else {
+                // show the 0th result if there are no results and the index + 1 otherwise
+                int result_index = num_search_results > 0 ? opengl_widget->get_current_search_result_index() + 1 : 0;
+                status_string.replace("%{search_results}", " | showing result " + QString::number(result_index) + " / " + QString::number(num_search_results));
+            }
             if (progress > 0) {
                 status_string.replace("%{search_progress}", " (" + QString::number((int)(progress * 100)) + "%" + ")");
             }
