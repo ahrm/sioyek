@@ -359,6 +359,7 @@ public:
     void update_highlight_type(const std::string& uuid, char new_type);
     void update_highlight_type(int index, char new_type);
     void update_bookmark_text(int index, const std::wstring& new_text, float new_font_size);
+    void update_bookmark_color(int index, const float color[3]);
     void update_bookmark_position(int index, AbsoluteDocumentPos new_begin_position, AbsoluteDocumentPos new_end_position);
     void update_portal_src_position(int index, AbsoluteDocumentPos new_position);
 
