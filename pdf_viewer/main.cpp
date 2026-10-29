@@ -885,6 +885,7 @@ int main(int argc, char* args[]) {
 
     MainWidget* main_widget = new MainWidget(mupdf_context, &db_manager, &document_manager, &config_manager, command_manager, &input_handler, &checksummer, &quit, pdf_renderer);
     windows.push_back(main_widget);
+    main_widget->open_tabs(get_last_opened_file_name());
 
 #ifndef SIOYEK_ANDROID
     guard.on_delete = std::move([&](QLocalSocket* deleted_socket) {
