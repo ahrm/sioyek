@@ -165,6 +165,16 @@ find_package(ZLIB REQUIRED)
 find_package(HarfBuzz REQUIRED)
 find_package(SQLite3 REQUIRED)
 
+# Distributions ship HarfBuzz as a CMake config package that only exposes an
+# imported target; older Find modules only defined HARFBUZZ_LIBRARIES.
+if(TARGET harfbuzz::harfbuzz)
+  set(SIOYEK_HARFBUZZ_LIBS harfbuzz::harfbuzz)
+elseif(TARGET HarfBuzz::HarfBuzz)
+  set(SIOYEK_HARFBUZZ_LIBS HarfBuzz::HarfBuzz)
+else()
+  set(SIOYEK_HARFBUZZ_LIBS ${HARFBUZZ_LIBRARIES})
+endif()
+
 if((QT_VERSION_MAJOR GREATER 5))
   target_compile_definitions(sioyek PRIVATE
         SIOYEK_QT6
@@ -183,7 +193,7 @@ add_library(fzf STATIC
 target_link_libraries(sioyek PRIVATE
     ${CMAKE_DL_LIBS}
     mupdf
-    ${HARFBUZZ_LIBRARIES}
+    ${SIOYEK_HARFBUZZ_LIBS}
     ZLIB::ZLIB
     fzf
     SQLite::SQLite3
@@ -205,6 +215,18 @@ if(APPLE)
       -lz
   )
 else()
+  if(UNIX)
+    # The CMake build links the vendored mupdf produced by build_linux.sh.
+    # libmupdf.a is outside the default linker paths and depends on both the
+    # third-party and the threading archives.
+    target_link_directories(sioyek PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/mupdf/build/release
+    )
+    target_link_libraries(sioyek PRIVATE
+        mupdf-third
+        mupdf-threads
+    )
+  endif()
   string(REPLACE "-mno-direct-extern-access" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
 
