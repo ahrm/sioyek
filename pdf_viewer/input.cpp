@@ -51,6 +51,7 @@ extern bool TOUCH_MODE;
 extern bool VERBOSE;
 extern float FREETEXT_BOOKMARK_COLOR[3];
 extern float FREETEXT_BOOKMARK_FONT_SIZE;
+extern std::wstring FREETEXT_BOOKMARK_FONT_FACE;
 extern bool FUZZY_SEARCHING;
 extern bool TOC_JUMP_ALIGN_TOP;
 extern bool FILL_TEXTBAR_WITH_SELECTED_TEXT;
@@ -1149,6 +1150,7 @@ public:
 class SymbolCommand : public Command {
 public:
     char symbol = 0;
+    bool symbol_control_pressed = false;
     SymbolCommand(std::string name, MainWidget* w) : Command(name, w) {}
     virtual std::optional<Requirement> next_requirement(MainWidget* widget) {
         if (symbol == 0) {
@@ -1161,6 +1163,11 @@ public:
 
     virtual void set_symbol_requirement(char value) {
         this->symbol = value;
+    }
+
+    void set_symbol_requirement_with_modifiers(char value, bool control_pressed) override {
+        set_symbol_requirement(value);
+        symbol_control_pressed = control_pressed;
     }
 
     virtual std::string get_human_readable_name() {
@@ -1343,12 +1350,17 @@ public:
 class NextItemCommand : public Command {
 public:
     static inline const std::string cname = "next_item";
-    static inline const std::string hname = "Go to next search result";
+    static inline const std::string hname = "Go to next search result, or start a note when not searching";
     NextItemCommand(MainWidget* w) : Command(cname, w) {}
 
     void perform() {
-        if (num_repeats == 0) num_repeats++;
-        widget->goto_search_result(num_repeats);
+        if (widget->has_active_search()) {
+            if (num_repeats == 0) num_repeats++;
+            widget->goto_search_result(num_repeats);
+        }
+        else {
+            widget->run_command_with_name("add_freetext_bookmark");
+        }
     }
 
     std::string get_name() {
@@ -2394,6 +2406,9 @@ public:
         incomplete_bookmark.begin_y = std::min<float>(value.y0, value.y1);
         incomplete_bookmark.end_y = std::max<float>(value.y0, value.y1);
 
+        incomplete_bookmark.font_size = FREETEXT_BOOKMARK_FONT_SIZE;
+        incomplete_bookmark.font_face = FREETEXT_BOOKMARK_FONT_FACE;
+
         incomplete_bookmark.color[0] = FREETEXT_BOOKMARK_COLOR[0];
         incomplete_bookmark.color[1] = FREETEXT_BOOKMARK_COLOR[1];
         incomplete_bookmark.color[2] = FREETEXT_BOOKMARK_COLOR[2];
@@ -2410,21 +2425,16 @@ public:
 
         if (pending_index != -1) {
             widget->doc()->undo_pending_bookmark(pending_index);
+            widget->set_selected_bookmark_index(-1);
         }
         Command::on_cancel();
     }
 
     void perform() {
         //widget->doc()->add_freetext_bookmark(text_.value(), rect_.value());
-        if (text_.value().size() > 0) {
-            std::string uuid = widget->doc()->add_pending_bookmark(pending_index, text_.value());
-            result = utf8_decode(uuid);
-            widget->set_selected_bookmark_index(-1);
-        }
-        else {
-            widget->doc()->undo_pending_bookmark(pending_index);
-            result = L"";
-        }
+        std::string uuid = widget->doc()->add_pending_bookmark(pending_index, text_.value());
+        result = utf8_decode(uuid);
+        widget->set_selected_bookmark_index(-1);
 
         widget->clear_selected_rect();
         widget->invalidate_render();
@@ -2485,11 +2495,7 @@ public:
     IncreaseFreetextBookmarkFontSizeCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
-        FREETEXT_BOOKMARK_FONT_SIZE *= 1.1f;
-        if (FREETEXT_BOOKMARK_FONT_SIZE > 100) {
-            FREETEXT_BOOKMARK_FONT_SIZE = 100;
-        }
-        widget->update_selected_bookmark_font_size();
+        widget->update_selected_bookmark_font_size(1.1f);
 
     }
 };
@@ -2501,11 +2507,7 @@ public:
     DecreaseFreetextBookmarkFontSizeCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
-        FREETEXT_BOOKMARK_FONT_SIZE /= 1.1f;
-        if (FREETEXT_BOOKMARK_FONT_SIZE < 1) {
-            FREETEXT_BOOKMARK_FONT_SIZE = 1;
-        }
-        widget->update_selected_bookmark_font_size();
+        widget->update_selected_bookmark_font_size(1.0f / 1.1f);
     }
 };
 
@@ -2661,10 +2663,20 @@ public:
 class AddHighlightCommand : public SymbolCommand {
 public:
     static inline const std::string cname = "add_highlight";
-    static inline const std::string hname = "Highlight selected text";
+    static inline const std::string hname = "Highlight selected text, or set a selected note color";
     AddHighlightCommand(MainWidget* w) : SymbolCommand(cname, w) {};
 
     void perform() {
+        bool has_selected_note = false;
+        if (widget->doc() && widget->selected_bookmark_index >= 0 &&
+            widget->selected_bookmark_index < widget->doc()->get_bookmarks().size()) {
+            const BookMark& bookmark = widget->doc()->get_bookmarks()[widget->selected_bookmark_index];
+            has_selected_note = bookmark.is_freetext() && !bookmark.is_box();
+        }
+        if (has_selected_note || symbol_control_pressed) {
+            widget->change_selected_bookmark_color(symbol);
+            return;
+        }
         result = widget->handle_add_highlight(symbol);
     }
 
@@ -3636,6 +3648,43 @@ public:
 
 };
 
+// A direct deletion command shared by desktop builds and newer annotation APIs.
+class DeleteSelectedBookmarkCommand : public Command {
+public:
+    static inline const std::string cname = "delete_selected_bookmark";
+    static inline const std::string hname = "Delete the selected note or bookmark";
+    DeleteSelectedBookmarkCommand(MainWidget* w) : Command(cname, w) {};
+    void perform() override {
+        widget->handle_delete_selected_bookmark();
+    }
+};
+
+class ChangeSelectedBookmarkColorCommand : public SymbolCommand {
+public:
+    static inline const std::string cname = "change_selected_bookmark_color";
+    static inline const std::string hname = "Set the selected note's text color from the highlight palette";
+    ChangeSelectedBookmarkColorCommand(MainWidget* w) : SymbolCommand(cname, w) {};
+    void perform() override {
+        widget->change_selected_bookmark_color(symbol);
+    }
+};
+
+class AddNoteArrowCommand : public Command {
+public:
+    static inline const std::string cname = "add_note_arrow";
+    static inline const std::string hname = "Attach a curved arrow to the selected note";
+    AddNoteArrowCommand(MainWidget* w) : Command(cname, w) {};
+    void perform() override { widget->begin_note_arrow(); }
+};
+
+class DeleteNoteArrowCommand : public Command {
+public:
+    static inline const std::string cname = "delete_note_arrow";
+    static inline const std::string hname = "Remove the arrow from the selected note";
+    DeleteNoteArrowCommand(MainWidget* w) : Command(cname, w) {};
+    void perform() override { widget->delete_selected_note_arrow(); }
+};
+
 class EditSelectedBookmarkCommand : public TextCommand {
 public:
     static inline const std::string cname = "edit_selected_bookmark";
@@ -3985,8 +4034,13 @@ class DeleteHighlightCommand : public GenericHighlightCommand {
 
 public:
     static inline const std::string cname = "delete_highlight";
-    static inline const std::string hname = "Delete the selected highlight";
+    static inline const std::string hname = "Delete the selected highlight or rectangle";
     DeleteHighlightCommand(MainWidget* w) : GenericHighlightCommand(cname, w) {};
+
+    int get_selected_item_index() override {
+        // A clicked rectangle needs no highlight tag prompt.
+        return widget->selected_rectangle_point ? 0 : GenericHighlightCommand::get_selected_item_index();
+    }
 
     void perform_with_highlight_selected() override {
         widget->handle_delete_selected_highlight();
@@ -5191,11 +5245,11 @@ public:
 class KeysCommand : public Command {
 public:
     static inline const std::string cname = "keys";
-    static inline const std::string hname = "Open the default keys config file";
+    static inline const std::string hname = "List effective key bindings";
     KeysCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
-        open_file(default_keys_path.get_path(), true);
+        widget->show_keybindings();
     }
 
     bool requires_document() { return false; }
@@ -5210,7 +5264,7 @@ public:
     void perform() {
         std::optional<Path> key_file_path = widget->input_handler->get_or_create_user_keys_path();
         if (key_file_path) {
-            open_file(key_file_path.value().get_path(), true);
+            open_text_file(key_file_path.value().get_path(), true);
         }
     }
 
@@ -5237,7 +5291,7 @@ public:
     PrefsCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
-        open_file(default_config_path.get_path(), true);
+        open_text_file(default_config_path.get_path(), true);
     }
 
     bool requires_document() { return false; }
@@ -5252,7 +5306,7 @@ public:
     void perform() {
         std::optional<Path> pref_file_path = widget->config_manager->get_or_create_user_config_file();
         if (pref_file_path) {
-            open_file(pref_file_path.value().get_path(), true);
+            open_text_file(pref_file_path.value().get_path(), true);
         }
     }
 
@@ -6155,6 +6209,52 @@ public:
         widget->set_rect_select_mode(false);
     }
 
+};
+
+class DrawRectangleCommand : public Command {
+public:
+    static inline const std::string cname = "draw_rectangle";
+    static inline const std::string hname = "Draw a persistent rectangle annotation";
+    DrawRectangleCommand(MainWidget* w) : Command(cname, w) {};
+    std::optional<AbsoluteRect> rect = {};
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (!rect.has_value()) {
+            return Requirement{ RequirementType::Rect, "Rectangle" };
+        }
+        return {};
+    }
+
+    void set_rect_requirement(AbsoluteRect value) {
+        rect = value;
+    }
+
+    void perform() {
+        widget->draw_rectangle(rect.value());
+    }
+};
+
+class DeleteRectangleCommand : public Command {
+public:
+    static inline const std::string cname = "delete_rectangle";
+    static inline const std::string hname = "Delete the rectangle annotation at a selected point";
+    DeleteRectangleCommand(MainWidget* w) : Command(cname, w) {};
+    std::optional<AbsoluteDocumentPos> point = {};
+
+    std::optional<Requirement> next_requirement(MainWidget* widget) {
+        if (!point.has_value()) {
+            return Requirement{ RequirementType::Point, "Rectangle to delete" };
+        }
+        return {};
+    }
+
+    void set_point_requirement(AbsoluteDocumentPos value) {
+        point = value;
+    }
+
+    void perform() {
+        widget->delete_rectangle(point.value());
+    }
 };
 
 class ToggleTypingModeCommand : public Command {
@@ -7221,6 +7321,10 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<GotoMark>();
     register_command<GotoPageWithPageNumberCommand>();
     register_command<EditSelectedBookmarkCommand>();
+    register_command<DeleteSelectedBookmarkCommand>();
+    register_command<ChangeSelectedBookmarkColorCommand>();
+    register_command<AddNoteArrowCommand>();
+    register_command<DeleteNoteArrowCommand>();
     register_command<EditSelectedHighlightCommand>();
     register_command<SearchCommand>();
     register_command<DownloadPaperWithUrlCommand>();
@@ -7435,6 +7539,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<OverviewRulerPortalCommand>();
     register_command<GotoRulerPortalCommand>();
     register_command<SelectRectCommand>();
+    register_command<DrawRectangleCommand>();
+    register_command<DeleteRectangleCommand>();
     register_command<ToggleTypingModeCommand>();
     register_command<DonateCommand>();
     register_command<OverviewNextItemCommand>();
@@ -8330,6 +8436,10 @@ std::optional<std::wstring> Command::get_result() {
 
 void Command::set_text_requirement(std::wstring value) {}
 void Command::set_symbol_requirement(char value) {}
+void Command::set_symbol_requirement_with_modifiers(char value, bool control_pressed) {
+    (void)control_pressed;
+    set_symbol_requirement(value);
+}
 void Command::set_file_requirement(std::wstring value) {}
 void Command::set_rect_requirement(AbsoluteRect value) {}
 void Command::set_point_requirement(AbsoluteDocumentPos value) {}

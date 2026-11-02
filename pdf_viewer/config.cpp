@@ -298,6 +298,7 @@ float HIDE_SYNCTEX_HIGHLIGHT_TIMEOUT = 1.0f;
 
 float FREETEXT_BOOKMARK_COLOR[3] = { 0.0f, 0.0f, 0.0f };
 float FREETEXT_BOOKMARK_FONT_SIZE = 8.0f;
+std::wstring FREETEXT_BOOKMARK_FONT_FACE;
 bool RENDER_FREETEXT_BORDERS = false;
 bool REAL_PAGE_SEPARATION = false;
 bool SAME_WIDTH = false;
@@ -1087,6 +1088,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
     add_string(L"right_status_bar_format", &RIGHT_STATUS_BAR_FORMAT);
     add_string(L"epub_css", &EPUB_CSS);
     add_string(L"tag_font_face", &TAG_FONT_FACE);
+    add_string(L"freetext_bookmark_font_face", &FREETEXT_BOOKMARK_FONT_FACE);
     add_macro(L"startup_commands", &STARTUP_COMMANDS);
     add_macro(L"shift_click_command", &SHIFT_CLICK_COMMAND);
     add_macro(L"resize_command", &RESIZE_COMMAND);

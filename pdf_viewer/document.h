@@ -359,6 +359,8 @@ public:
     void update_highlight_type(const std::string& uuid, char new_type);
     void update_highlight_type(int index, char new_type);
     void update_bookmark_text(int index, const std::wstring& new_text, float new_font_size);
+    void update_bookmark_color(int index, const float color[3]);
+    void update_bookmark_arrow(int index, const std::optional<NoteArrow>& arrow);
     void update_bookmark_position(int index, AbsoluteDocumentPos new_begin_position, AbsoluteDocumentPos new_end_position);
     void update_portal_src_position(int index, AbsoluteDocumentPos new_position);
 
@@ -420,6 +422,7 @@ public:
     std::vector<SearchResult> search_regex(std::wstring query, SearchCaseSensitivity case_sensitive, int begin_page, int min_page, int max_page);
     float max_y_offset();
     void add_freehand_drawing(FreehandDrawing new_drawing);
+    bool delete_rectangle_at(AbsoluteDocumentPos point);
     void get_page_freehand_drawings_with_indices(int page, const std::vector<SelectedObjectIndex>& indices, std::vector<FreehandDrawing>& freehand_drawings, std::vector<PixmapDrawing>& pixmap_drawings);
     void undo_freehand_drawing();
     const std::vector<FreehandDrawing>& get_page_drawings(int page);

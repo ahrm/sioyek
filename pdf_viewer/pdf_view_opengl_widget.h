@@ -6,6 +6,8 @@
 #include <optional>
 #include <utility>
 #include <array>
+#include <memory>
+#include <unordered_map>
 
 //#include <qopenglfunctions_3_1.h>
 #include <qopenglwidget.h>
@@ -29,6 +31,9 @@ class DocumentView;
 class PdfRenderer;
 class ConfigManager;
 class ScratchPad;
+#ifdef SIOYEK_JKQT_MATHTEXT_SUPPORT
+class JKQTMathText;
+#endif
 
 struct MarkedDataRect {
     DocumentRect rect;
@@ -173,6 +178,12 @@ private:
 
     std::optional<AbsoluteRect> selected_rectangle = {};
 
+#ifdef SIOYEK_JKQT_MATHTEXT_SUPPORT
+    std::unordered_map<std::string, std::unique_ptr<JKQTMathText>> note_math_cache;
+    JKQTMathText* get_note_math_renderer(const QString& latex);
+#endif
+    void render_note_text(QPainter* painter, const QRect& rect, int flags, const QString& text);
+
     GLuint LoadShaders(Path vertex_file_path_, Path fragment_file_path_);
 protected:
     void initializeGL() override;
@@ -186,6 +197,8 @@ protected:
     void render_scratchpad(QPainter* painter);
     void add_coordinates_for_window_point(DocumentView* dv, float window_x, float window_y, float r, int point_polygon_vertices, std::vector<float>& out_coordinates);
     void render_drawings(DocumentView* dv, const std::vector<FreehandDrawing>& drawings, bool highlighted = false);
+    void render_freehand_drawings(DocumentView* dv, const std::vector<FreehandDrawing>& drawings, bool highlighted = false);
+    void render_rectangle_drawings(DocumentView* dv, const std::vector<FreehandDrawing>& drawings, bool highlighted = false);
     void render_compiled_drawings();
     void render_line(DocumentView* dv, FreehandDrawing drawing);
     std::vector<std::pair<QRect, QString>> get_hint_rect_and_texts();

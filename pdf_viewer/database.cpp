@@ -241,7 +241,7 @@ static int global_highlight_select_callback(void* res_vector, int argc, char** a
 static int bookmark_select_callback(void* res_vector, int argc, char** argv, char** col_name) {
 
     std::vector<BookMark>* res = (std::vector<BookMark>*)res_vector;
-    assert(argc == 14);
+    assert(argc == 15);
 
     std::wstring desc = utf8_decode(argv[0]);
     float offset_y = -1;
@@ -308,6 +308,7 @@ static int bookmark_select_callback(void* res_vector, int argc, char** argv, cha
     bm.color[2] = color_blue;
     bm.font_size = font_size;
     bm.font_face = font_face;
+    if (argv[14]) bm.arrow = note_arrow_from_db_string(QString::fromUtf8(argv[14]));
 
     res->push_back(bm);
     return 0;
@@ -583,6 +584,7 @@ bool DatabaseManager::create_bookmarks_table() {
         "color_green real DEFAULT 0,"\
         "color_blue real DEFAULT 0,"\
         "font_face TEXT,"\
+        "arrow_json TEXT,"\
         "begin_x real DEFAULT -1,"\
         "begin_y real DEFAULT -1,"\
         "end_x real DEFAULT -1,"\
@@ -808,7 +810,7 @@ bool DatabaseManager::insert_bookmark_freetext(const std::string& document_path,
     std::lock_guard<std::recursive_mutex> lock(db_mutex);
 
     std::wstringstream ss;
-    ss << "INSERT INTO bookmarks (document_path, desc, begin_x, begin_y, end_x, end_y, color_red, color_green, color_blue, font_size, font_face, uuid, creation_time, modification_time) VALUES ('"
+    ss << "INSERT INTO bookmarks (document_path, desc, begin_x, begin_y, end_x, end_y, color_red, color_green, color_blue, font_size, font_face, arrow_json, uuid, creation_time, modification_time) VALUES ('"
         << esc(document_path) << "', '"
         << esc(bm.description) << "', "
         << bm.begin_x << " , "
@@ -820,6 +822,7 @@ bool DatabaseManager::insert_bookmark_freetext(const std::string& document_path,
         << bm.color[2] << ", "
         << bm.font_size << ", '"
         << bm.font_face << "', '"
+        << esc(note_arrow_to_db_string(bm.arrow).toStdWString()) << "', '"
         << esc(bm.uuid) << "', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);";
     char* error_message = nullptr;
 
@@ -1137,7 +1140,7 @@ bool DatabaseManager::select_global_mark(char symbol, std::vector<std::pair<std:
 bool DatabaseManager::select_bookmark(const std::string& book_path, std::vector<BookMark>& out_result) {
     std::lock_guard<std::recursive_mutex> lock(db_mutex);
     std::wstringstream ss;
-    ss << "select desc, offset_y, begin_x, begin_y, end_x, end_y, color_red, color_green, color_blue, font_size, font_face, uuid, creation_time, modification_time from bookmarks where document_path='" << esc(book_path) << "';";
+    ss << "select desc, offset_y, begin_x, begin_y, end_x, end_y, color_red, color_green, color_blue, font_size, font_face, uuid, creation_time, modification_time, arrow_json from bookmarks where document_path='" << esc(book_path) << "';";
 
     char* error_message = nullptr;
     int error_code = sqlite3_exec(global_db, utf8_encode(ss.str()).c_str(), bookmark_select_callback, &out_result, &error_message);
@@ -1587,7 +1590,15 @@ void DatabaseManager::import_json(std::wstring json_file_path, CachedChecksummer
         }
 
         for (const auto& bm : new_bookmarks) {
-            insert_bookmark(checksum, bm.description, bm.y_offset_, utf8_decode(bm.uuid));
+            if (bm.is_freetext()) {
+                insert_bookmark_freetext(checksum, bm);
+            }
+            else if (bm.is_marked()) {
+                insert_bookmark_marked(checksum, bm.description, bm.begin_x, bm.begin_y, utf8_decode(bm.uuid));
+            }
+            else {
+                insert_bookmark(checksum, bm.description, bm.y_offset_, utf8_decode(bm.uuid));
+            }
         }
 
         for (const auto& mark : new_marks) {
@@ -1724,6 +1735,18 @@ void DatabaseManager::ensure_schema_compatibility() {
         }
 
         set_version();
+    }
+
+    // This optional column leaves the existing database version usable by older Sioyek builds.
+    sqlite3_stmt* columns = nullptr;
+    if (sqlite3_prepare_v2(global_db, "PRAGMA table_info(bookmarks);", -1, &columns, nullptr) == SQLITE_OK) {
+        bool has_arrow_column = false;
+        while (sqlite3_step(columns) == SQLITE_ROW) {
+            const unsigned char* name = sqlite3_column_text(columns, 1);
+            if (name && std::string(reinterpret_cast<const char*>(name)) == "arrow_json") has_arrow_column = true;
+        }
+        sqlite3_finalize(columns);
+        if (!has_arrow_column) run_schema_query("ALTER TABLE bookmarks ADD COLUMN arrow_json TEXT;");
     }
 }
 
@@ -1947,6 +1970,25 @@ bool DatabaseManager::update_bookmark_change_text(const std::string& uuid, const
             {"font_size", new_font_size},
             {"modification_time", "CURRENT_TIMESTAMP"},
         });
+}
+bool DatabaseManager::update_bookmark_change_color(const std::string& uuid, const float color[3]) {
+    std::lock_guard<std::recursive_mutex> lock(db_mutex);
+    return generic_update_run_query("bookmarks",
+        {
+            {"uuid", QString::fromStdString(uuid)},
+        },
+        {
+            {"color_red", color[0]},
+            {"color_green", color[1]},
+            {"color_blue", color[2]},
+            {"modification_time", "CURRENT_TIMESTAMP"},
+        });
+}
+bool DatabaseManager::update_bookmark_arrow(const std::string& uuid, const std::optional<NoteArrow>& arrow) {
+    std::lock_guard<std::recursive_mutex> lock(db_mutex);
+    return generic_update_run_query("bookmarks",
+        {{"uuid", QString::fromStdString(uuid)}},
+        {{"arrow_json", note_arrow_to_db_string(arrow)}, {"modification_time", "CURRENT_TIMESTAMP"}});
 }
 bool DatabaseManager::update_bookmark_change_position(const std::string& uuid, AbsoluteDocumentPos new_begin, AbsoluteDocumentPos new_end) {
     std::lock_guard<std::recursive_mutex> lock(db_mutex);

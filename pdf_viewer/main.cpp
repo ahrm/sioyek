@@ -72,6 +72,10 @@
 #include "OpenWithApplication.h"
 #include "new_file_checker.h"
 
+#ifdef SIOYEK_DJVU_SUPPORT
+#include "djvu_document.h"
+#endif
+
 #define FTS_FUZZY_MATCH_IMPLEMENTATION
 #include "fts_fuzzy_match.h"
 #undef FTS_FUZZY_MATCH_IMPLEMENTATION
@@ -849,6 +853,9 @@ int main(int argc, char* args[]) {
     bool fail = false;
     fz_try(mupdf_context) {
         fz_register_document_handlers(mupdf_context);
+#ifdef SIOYEK_DJVU_SUPPORT
+        register_djvu_document_handler(mupdf_context);
+#endif
     }
     fz_catch(mupdf_context) {
         std::cerr << "could not register document handlers" << std::endl;
