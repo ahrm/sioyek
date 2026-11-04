@@ -1948,6 +1948,19 @@ bool DatabaseManager::update_bookmark_change_text(const std::string& uuid, const
             {"modification_time", "CURRENT_TIMESTAMP"},
         });
 }
+bool DatabaseManager::update_bookmark_change_color(const std::string& uuid, const float color[3]) {
+    std::lock_guard<std::recursive_mutex> lock(db_mutex);
+    return generic_update_run_query("bookmarks",
+        {
+            {"uuid", QString::fromStdString(uuid)},
+        },
+        {
+            {"color_red", color[0]},
+            {"color_green", color[1]},
+            {"color_blue", color[2]},
+            {"modification_time", "CURRENT_TIMESTAMP"},
+        });
+}
 bool DatabaseManager::update_bookmark_change_position(const std::string& uuid, AbsoluteDocumentPos new_begin, AbsoluteDocumentPos new_end) {
     std::lock_guard<std::recursive_mutex> lock(db_mutex);
     std::wstringstream ss;

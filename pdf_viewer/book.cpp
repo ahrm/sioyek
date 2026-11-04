@@ -304,8 +304,8 @@ AbsoluteRect BookMark::get_rectangle() const{
     if (end_y > -1) {
 
         return AbsoluteRect(
-            AbsoluteDocumentPos{ begin_x, begin_y },
-            AbsoluteDocumentPos{ end_x, end_y }
+            AbsoluteDocumentPos{ std::min(begin_x, end_x), std::min(begin_y, end_y) },
+            AbsoluteDocumentPos{ std::max(begin_x, end_x), std::max(begin_y, end_y) }
         );
     }
     else {

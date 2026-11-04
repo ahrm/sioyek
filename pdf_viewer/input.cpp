@@ -51,6 +51,7 @@ extern bool TOUCH_MODE;
 extern bool VERBOSE;
 extern float FREETEXT_BOOKMARK_COLOR[3];
 extern float FREETEXT_BOOKMARK_FONT_SIZE;
+extern std::wstring FREETEXT_BOOKMARK_FONT_FACE;
 extern bool FUZZY_SEARCHING;
 extern bool TOC_JUMP_ALIGN_TOP;
 extern bool FILL_TEXTBAR_WITH_SELECTED_TEXT;
@@ -2394,6 +2395,9 @@ public:
         incomplete_bookmark.begin_y = std::min<float>(value.y0, value.y1);
         incomplete_bookmark.end_y = std::max<float>(value.y0, value.y1);
 
+        incomplete_bookmark.font_size = FREETEXT_BOOKMARK_FONT_SIZE;
+        incomplete_bookmark.font_face = FREETEXT_BOOKMARK_FONT_FACE;
+
         incomplete_bookmark.color[0] = FREETEXT_BOOKMARK_COLOR[0];
         incomplete_bookmark.color[1] = FREETEXT_BOOKMARK_COLOR[1];
         incomplete_bookmark.color[2] = FREETEXT_BOOKMARK_COLOR[2];
@@ -2410,6 +2414,7 @@ public:
 
         if (pending_index != -1) {
             widget->doc()->undo_pending_bookmark(pending_index);
+            widget->set_selected_bookmark_index(-1);
         }
         Command::on_cancel();
     }
@@ -2423,6 +2428,7 @@ public:
         }
         else {
             widget->doc()->undo_pending_bookmark(pending_index);
+            widget->set_selected_bookmark_index(-1);
             result = L"";
         }
 
@@ -2485,11 +2491,7 @@ public:
     IncreaseFreetextBookmarkFontSizeCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
-        FREETEXT_BOOKMARK_FONT_SIZE *= 1.1f;
-        if (FREETEXT_BOOKMARK_FONT_SIZE > 100) {
-            FREETEXT_BOOKMARK_FONT_SIZE = 100;
-        }
-        widget->update_selected_bookmark_font_size();
+        widget->update_selected_bookmark_font_size(1.1f);
 
     }
 };
@@ -2501,11 +2503,7 @@ public:
     DecreaseFreetextBookmarkFontSizeCommand(MainWidget* w) : Command(cname, w) {};
 
     void perform() {
-        FREETEXT_BOOKMARK_FONT_SIZE /= 1.1f;
-        if (FREETEXT_BOOKMARK_FONT_SIZE < 1) {
-            FREETEXT_BOOKMARK_FONT_SIZE = 1;
-        }
-        widget->update_selected_bookmark_font_size();
+        widget->update_selected_bookmark_font_size(1.0f / 1.1f);
     }
 };
 
@@ -3634,6 +3632,27 @@ public:
 
     }
 
+};
+
+// A direct deletion command shared by desktop builds and newer annotation APIs.
+class DeleteSelectedBookmarkCommand : public Command {
+public:
+    static inline const std::string cname = "delete_selected_bookmark";
+    static inline const std::string hname = "Delete the selected note or bookmark";
+    DeleteSelectedBookmarkCommand(MainWidget* w) : Command(cname, w) {};
+    void perform() override {
+        widget->handle_delete_selected_bookmark();
+    }
+};
+
+class ChangeSelectedBookmarkColorCommand : public Command {
+public:
+    static inline const std::string cname = "change_selected_bookmark_color";
+    static inline const std::string hname = "Choose the selected note's text color";
+    ChangeSelectedBookmarkColorCommand(MainWidget* w) : Command(cname, w) {};
+    void perform() override {
+        widget->change_selected_bookmark_color();
+    }
 };
 
 class EditSelectedBookmarkCommand : public TextCommand {
@@ -7221,6 +7240,8 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<GotoMark>();
     register_command<GotoPageWithPageNumberCommand>();
     register_command<EditSelectedBookmarkCommand>();
+    register_command<DeleteSelectedBookmarkCommand>();
+    register_command<ChangeSelectedBookmarkColorCommand>();
     register_command<EditSelectedHighlightCommand>();
     register_command<SearchCommand>();
     register_command<DownloadPaperWithUrlCommand>();
