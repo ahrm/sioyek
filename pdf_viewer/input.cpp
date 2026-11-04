@@ -3092,6 +3092,7 @@ public:
             }
         }
         else {
+            widget->set_last_performed_command({});
             if (!fixed_velocity_state_to_restore.has_value()) {
                 fixed_velocity_state_to_restore = widget->get_continuous_fixed_velocity_state();
             }
