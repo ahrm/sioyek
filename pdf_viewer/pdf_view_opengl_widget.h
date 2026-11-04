@@ -251,6 +251,7 @@ public:
     void render_overview(OverviewState overview);
     void render_page(int page_number, bool in_overview=false, ColorPalette forced_palette=ColorPalette::None, bool stencils_allowed=true);
     bool get_is_searching(float* prog);
+    bool get_is_search_done();
     void search_text(const std::wstring& text, SearchCaseSensitivity case_sensitive = SearchCaseSensitivity::CaseInsensitive, bool regex = false, std::optional<std::pair<int, int>> range = {});
     void set_dark_mode(bool mode);
     void toggle_dark_mode();
