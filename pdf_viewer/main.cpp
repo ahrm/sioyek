@@ -220,6 +220,15 @@ void configure_paths_android() {
 }
 #endif
 
+Path get_sioyek_data_path() {
+    char* APPDIR = std::getenv("XDG_DATA_HOME");
+    if (!APPDIR) {
+        APPDIR = std::getenv("HOME");
+        return Path(utf8_decode(APPDIR)).slash(L".local").slash(L"share").slash(L"sioyek");
+    }
+    return Path(utf8_decode(APPDIR)).slash(L"sioyek");
+}
+
 void configure_paths() {
 #ifdef SIOYEK_ANDROID
     configure_paths_android();
@@ -268,18 +277,7 @@ void configure_paths() {
     last_opened_file_address_path = standard_data_path.slash(L"last_document_path.txt");
     shader_path = read_only_data_path.slash(L"shaders");
 #else
-    char* APPDIR = std::getenv("XDG_DATA_HOME");
-    Path linux_home_path(QDir::homePath().toStdWString());
-
-    if (!APPDIR) {
-        APPDIR = std::getenv("HOME");
-        standard_data_path = Path(utf8_decode(APPDIR));
-        standard_data_path = standard_data_path.slash(L".local").slash(L"share");
-    } else {
-        standard_data_path = Path(utf8_decode(APPDIR));
-    }
-
-    standard_data_path = standard_data_path.slash(L"sioyek");
+    standard_data_path = get_sioyek_data_path();
     standard_data_path.create_directories();
 
     default_config_path = parent_path.slash(L"prefs.config");
@@ -293,6 +291,7 @@ void configure_paths() {
     tutorial_path = standard_data_path.slash(L"tutorial.pdf");
     last_opened_file_address_path = standard_data_path.slash(L"last_document_path.txt");
 
+    Path linux_home_path(QDir::homePath().toStdWString());
     Path linux_standard_config_path = linux_home_path.slash(L".config").slash(L"sioyek");
     //user_keys_paths.push_back(mac_standard_config_path.slash(L"keys_user.config"));
     //user_config_paths.push_back(mac_standard_config_path.slash(L"prefs_user.config"));
@@ -307,7 +306,12 @@ void configure_paths() {
 #ifdef NDEBUG
     //install_app(exe_path.c_str());
 #endif
-    standard_data_path = Path(QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(0).toStdWString());
+#ifdef Q_OS_MACOS
+    standard_data_path = get_sioyek_data_path();
+#endif
+    if (!standard_data_path.dir_exists()) {
+        standard_data_path = Path(QStandardPaths::standardLocations(QStandardPaths::AppDataLocation).at(0).toStdWString());
+    }
     QStringList all_config_paths = QStandardPaths::standardLocations(QStandardPaths::AppConfigLocation);
 
     standard_data_path.create_directories();
