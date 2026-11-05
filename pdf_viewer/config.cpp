@@ -199,6 +199,7 @@ int SINGLE_MAIN_WINDOW_MOVE[2] = { -1, -1 };
 bool ENABLE_EXPERIMENTAL_FEATURES = false;
 bool CREATE_TABLE_OF_CONTENTS_IF_NOT_EXISTS = true;
 int MAX_CREATED_TABLE_OF_CONTENTS_SIZE = 5000;
+int TOC_SCROLL_MARGIN = 3;
 bool FORCE_CUSTOM_LINE_ALGORITHM = false;
 float OVERVIEW_SIZE[2] = { 0.8f, 0.4f };
 float OVERVIEW_OFFSET[2] = { 0.0f, 0.0f };
@@ -1130,6 +1131,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
     add_int(L"status_bar_font_size", &STATUS_BAR_FONT_SIZE, IntExtras{1, 100});
     add_int(L"text_summary_context_size", &TEXT_SUMMARY_CONTEXT_SIZE, IntExtras{1, 100});
     add_int(L"max_created_toc_size", &MAX_CREATED_TABLE_OF_CONTENTS_SIZE, IntExtras{1, 100000});
+    add_int(L"toc_scroll_margin", &TOC_SCROLL_MARGIN, IntExtras{0, 100});
     add_int(L"prerendered_page_count", &PRERENDERED_PAGE_COUNT, IntExtras{0, 10});
     add_int(L"reload_interval_miliseconds", &RELOAD_INTERVAL_MILISECONDS, IntExtras{0, 10000});
     add_ivec2(L"main_window_size", MAIN_WINDOW_SIZE);
