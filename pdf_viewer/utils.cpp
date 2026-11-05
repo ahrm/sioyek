@@ -3580,7 +3580,7 @@ QStringList extract_paper_string_from_json_response(QJsonObject json_object, std
     return extract_paper_data_from_json_response(json_object, parts);
 }
 
-QString file_size_to_human_readable_string(int file_size) {
+QString file_size_to_human_readable_string(quint64 file_size) {
     if (file_size < 1000) {
         return QString::number(file_size);
     }
@@ -3590,7 +3590,7 @@ QString file_size_to_human_readable_string(int file_size) {
     else if (file_size < 1000 * 1000 * 1000) {
         return QString::number(file_size / (1000 * 1000)) + "M";
     }
-    else if (file_size < 1000 * 1000 * 1000 * 1000) {
+    else if (file_size < 1000ULL * 1000 * 1000 * 1000) {
         return QString::number(file_size / (1000 * 1000 * 1000)) + "G";
     }
     else {
