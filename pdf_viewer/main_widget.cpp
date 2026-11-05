@@ -1157,12 +1157,12 @@ MainWidget::MainWidget(fz_context* mupdf_context,
                     if (dynamic_cast<FilteredSelectTableWindowClass<std::wstring>*>(current_widget_stack.back())) {
                         FilteredSelectTableWindowClass<std::wstring>* list_view = dynamic_cast<FilteredSelectTableWindowClass<std::wstring>*>(current_widget_stack.back());
                         list_view->set_value_second_item(url.toStdWString(),
-                            file_size_to_human_readable_string(reply->header(QNetworkRequest::ContentLengthHeader).toUInt()));
+                            file_size_to_human_readable_string(reply->header(QNetworkRequest::ContentLengthHeader).toULongLong()));
                     }
                     if (dynamic_cast<TouchFilteredSelectWidget<std::wstring>*>(current_widget_stack.back())) {
                         TouchFilteredSelectWidget<std::wstring>* list_view = dynamic_cast<TouchFilteredSelectWidget<std::wstring>*>(current_widget_stack.back());
                         list_view->set_value_second_item(url.toStdWString(),
-                            file_size_to_human_readable_string(reply->header(QNetworkRequest::ContentLengthHeader).toUInt()));
+                            file_size_to_human_readable_string(reply->header(QNetworkRequest::ContentLengthHeader).toULongLong()));
                     }
                     });
 
