@@ -285,6 +285,7 @@ float PAGE_SPACE_X = 10.0f;
 float PAGE_SPACE_Y = 10.0f;
 bool USE_KEYBOARD_POINT_SELECTION = false;
 std::wstring TAG_FONT_FACE = L"";
+std::wstring TEXT_EDITOR_COMMAND;
 //UIRect TEST_UI_RECT = {true, -0.1f, 0.1f, -0.1f, 0.1f};
 
 bool PAPER_DOWNLOAD_CREATE_PORTAL = true;
@@ -1087,6 +1088,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
     add_string(L"right_status_bar_format", &RIGHT_STATUS_BAR_FORMAT);
     add_string(L"epub_css", &EPUB_CSS);
     add_string(L"tag_font_face", &TAG_FONT_FACE);
+    add_string(L"text_editor_command", &TEXT_EDITOR_COMMAND);
     add_macro(L"startup_commands", &STARTUP_COMMANDS);
     add_macro(L"shift_click_command", &SHIFT_CLICK_COMMAND);
     add_macro(L"resize_command", &RESIZE_COMMAND);
