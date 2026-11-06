@@ -271,6 +271,7 @@ public:
     void delete_intersecting_drawings(AbsoluteRect selection);
     void delete_intersecting_pixmaps(AbsoluteRect selection);
     void delete_intersecting_objects(AbsoluteRect selection);
+    bool delete_rectangle_at(AbsoluteDocumentPos point);
     void get_selected_objects_with_indices(const std::vector<SelectedObjectIndex>& indices, std::vector<FreehandDrawing>& freehand_drawings, std::vector<PixmapDrawing>& pixmap_drawings);
     void add_pixmap(QPixmap pixmap);
     AbsoluteRect get_bounding_box();

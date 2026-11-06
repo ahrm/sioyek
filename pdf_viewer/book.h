@@ -9,6 +9,7 @@
 #include <qopengl.h>
 #include <variant>
 #include <qjsonobject.h>
+#include <qjsonvalue.h>
 #include <qdatetime.h>
 #include <qpixmap.h>
 
@@ -16,6 +17,7 @@
 
 class DocumentView;
 class Document;
+struct BookMark;
 
 enum class SelectedObjectType {
     Drawing,
@@ -88,6 +90,19 @@ struct Mark : Annotation {
     void add_to_tuples(std::vector<std::pair<std::string, QVariant>>& tuples) override;
 };
 
+struct NoteArrow {
+    AbsoluteDocumentPos tip{0, 0};
+    AbsoluteDocumentPos control1{0, 0};
+    AbsoluteDocumentPos control2{0, 0};
+
+    QJsonObject to_json() const;
+    static std::optional<NoteArrow> from_json(const QJsonValue& value);
+};
+
+QString note_arrow_to_db_string(const std::optional<NoteArrow>& arrow);
+std::optional<NoteArrow> note_arrow_from_db_string(const QString& value);
+AbsoluteDocumentPos note_arrow_anchor(const BookMark& bookmark, AbsoluteDocumentPos toward);
+
 /*
     A bookmark is similar to mark but instead of being indexed by a symbol, it has a description.
 */
@@ -103,6 +118,7 @@ struct BookMark : Annotation {
     float color[3] = { 0 };
     float font_size = -1;
     std::wstring font_face;
+    std::optional<NoteArrow> arrow;
 
     AbsoluteDocumentPos begin_pos();
     AbsoluteDocumentPos end_pos();
@@ -180,7 +196,8 @@ struct FreehandDrawing {
     char type;
     float alpha = 1;
     QDateTime creattion_time;
-    AbsoluteRect bbox();
+    AbsoluteRect bbox() const;
+    bool is_rectangle() const;
 };
 
 struct PixmapDrawing {
