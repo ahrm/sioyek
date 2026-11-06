@@ -119,6 +119,8 @@ int WindowPos::manhattan(const WindowPos& other) {
 }
 
 AbsoluteRect::AbsoluteRect(AbsoluteDocumentPos top_left, AbsoluteDocumentPos bottom_right) {
+    if (top_left.x > bottom_right.x) std::swap(top_left.x, bottom_right.x);
+    if (top_left.y > bottom_right.y) std::swap(top_left.y, bottom_right.y);
     x0 = top_left.x;
     y0 = top_left.y;
     x1 = bottom_right.x;
