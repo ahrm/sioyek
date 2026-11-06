@@ -1421,8 +1421,17 @@ bool CommandSelector::on_text_change(const QString& text) {
         return lhs.second > rhs.second;
         });
 
+    // Always select an exact command before longer prefix matches. The source
+    // command list may be ordered by recent use or an unordered map.
     for (int i = 0; i < elements_matching_prefix.size(); i++) {
-        if (elements_matching_prefix.at(i).startsWith(actual_text)) {
+        if (elements_matching_prefix.at(i) == actual_text) {
+            matching_element_names.push_back(elements_matching_prefix.at(i).toStdString());
+        }
+    }
+
+    for (int i = 0; i < elements_matching_prefix.size(); i++) {
+        if (elements_matching_prefix.at(i) != actual_text &&
+            elements_matching_prefix.at(i).startsWith(actual_text)) {
             matching_element_names.push_back(elements_matching_prefix.at(i).toStdString());
         }
     }
