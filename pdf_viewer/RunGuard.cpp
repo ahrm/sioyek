@@ -3,98 +3,114 @@
 #include "RunGuard.h"
 
 #include <QCryptographicHash>
+#include <QDeadlineTimer>
+#include <QDir>
+#include <QFile>
+#include <QStandardPaths>
+#include <QThread>
 #include <QtCore>
-#include <QTimer>
 
 namespace
 {
-    QString generateKeyHash(const QString& key, const QString& salt)
+    // Directory holding the lock file and, on Unix, the socket. It must be
+    // per-user and must not be purged while sioyek runs: macOS deletes files in
+    // $TMPDIR that have not been accessed for a few days, and systemd-tmpfiles
+    // ages out /tmp on many Linux distributions.
+    QString ipcDirectory()
     {
-        QByteArray data;
-        data.append(key.toUtf8());
-        data.append(salt.toUtf8());
-        data = QCryptographicHash::hash(data, QCryptographicHash::Sha1).toHex();
-        return data;
+#ifdef Q_OS_WIN
+        // The lock file stays open while it is held, so Windows cannot delete
+        // it from the temp directory.
+        return QDir::tempPath();
+#else
+        // $XDG_RUNTIME_DIR on Linux, ~/Library/Application Support on macOS.
+        QString base = QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation);
+        if (base.isEmpty()) {
+            base = QDir::tempPath();
+        }
+        QString dir = base + "/sioyek";
+        QDir().mkpath(dir);
+        return dir;
+#endif
+    }
+
+    // A short, filesystem-safe name derived from the instance key. Instance
+    // keys can be long (sioyek_<uuid>), and Unix socket paths are limited.
+    QString fileStem(const QString& key)
+    {
+        QByteArray hash = QCryptographicHash::hash(key.toUtf8(), QCryptographicHash::Sha1).toHex();
+        return "ipc-" + QString::fromLatin1(hash.left(16));
     }
 }
 
 RunGuard::RunGuard(const QString& key) : QObject{},
-key(key),
-memoryKey(generateKeyHash(key, "_sharedMemKey"))
+key(key)
 {
-    // By explicitly attaching it and then deleting it we make sure that the
-    // memory is deleted even after the process has crashed on Unix.
-    memory = new QSharedMemory{ memoryKey };
-    memory->attach();
-    delete memory;
+    QString dir = ipcDirectory();
+    QString stem = fileStem(key);
 
-    // Guarantee process safe behaviour with a shared memory block.
-    memory = new QSharedMemory(memoryKey);
+    lockFile = std::make_unique<QLockFile>(dir + "/" + stem + ".lock");
+    // A lock is stale only when the process that holds it no longer exists,
+    // never because of its age: a viewer can stay open for weeks.
+    lockFile->setStaleLockTime(0);
 
-    // Creates a shared memory segment then attaches to it with the given
-    // access mode and returns true.
-    // If a shared memory segment identified by the key already exists, the
-    // attach operation is not performed and false is returned.
-
-    //qDebug() << "Creating shared memory block...";
-    bool isPrimary = false;
-    if (memory->create(sizeof(quint64))) {
-        //qDebug() << "Shared memory created: this is the primary application.";
-        isPrimary = true;
+#ifdef Q_OS_WIN
+    serverName = key;
+#else
+    serverName = dir + "/" + stem + ".sock";
+    // sockaddr_un.sun_path holds 104 bytes on macOS and 108 on Linux. With a
+    // very long home directory, fall back to Qt's default socket location.
+    if (QFile::encodeName(serverName).size() >= 100) {
+        serverName = key;
     }
-    else {
-        //qDebug() << "Shared memory already exists: this is a secondary application.";
-        //qDebug() << "Secondary application attaching to shared memory block...";
-        if (!memory->attach()) {
-            qCritical() << "Secondary application cannot attach to shared memory block.";
-            QCoreApplication::exit();
-        }
-        //qDebug() << "Secondary application successfully attached to shared memory block.";
+#endif
+
+    if (lockFile->tryLock(0)) {
+        primary = true;
+    }
+    else if (lockFile->error() != QLockFile::LockFailedError) {
+        // We cannot even create the lock file. Starting is more useful than
+        // refusing to, even if it means a second instance.
+        qWarning() << "Cannot create the single-instance lock file" << lockFile->fileName()
+                   << "; starting as the primary instance anyway.";
+        primary = true;
     }
 
-    memory->lock();
-    if (isPrimary) { // Start primary server.
-        //qDebug() << "Starting IPC server...";
-        QLocalServer::removeServer(key);
-        server = new QLocalServer;
+    if (primary) {
+        // Any socket left at this path belongs to a primary that is gone,
+        // since we now hold the lock.
+        QLocalServer::removeServer(serverName);
+        server = new QLocalServer(this);
         server->setSocketOptions(QLocalServer::UserAccessOption);
-        if (server->listen(key)) {
-            //qDebug() << "IPC server started.";
-        }
-        else {
-            qCritical() << "Cannot start IPC server.";
-            QCoreApplication::exit();
+        if (!server->listen(serverName)) {
+            qCritical() << "Cannot start IPC server:" << server->errorString();
         }
         QObject::connect(server, &QLocalServer::newConnection,
             this, &RunGuard::onNewConnection);
     }
-    memory->unlock();
 }
 
 RunGuard::~RunGuard()
 {
-    bool was_server = false;
-    memory->lock();
     if (server) {
-        was_server = true;
+        // Removes the socket file on Unix.
         server->close();
         delete server;
         server = nullptr;
     }
-    memory->unlock();
-    if (was_server){
-        delete memory;
+    if (lockFile) {
+        lockFile->unlock();
     }
 }
 
 bool RunGuard::isPrimary()
 {
-    return server != nullptr;
+    return primary;
 }
 
 bool RunGuard::isSecondary()
 {
-    return server == nullptr;
+    return !primary;
 }
 
 void RunGuard::onNewConnection()
@@ -122,25 +138,31 @@ void RunGuard::readMessage(QLocalSocket* socket)
 std::string RunGuard::sendMessage(const QByteArray& message, bool wait)
 {
     QLocalSocket socket;
-    socket.connectToServer(key, QLocalSocket::ReadWrite);
-    socket.waitForConnected();
-    if (socket.state() == QLocalSocket::ConnectedState) {
-        if (socket.state() == QLocalSocket::ConnectedState) {
-            socket.write(message);
-            if (socket.waitForBytesWritten()) {
-                if (wait) {
-                    socket.waitForReadyRead();
-                    std::string response = socket.readAll().toStdString();
-                    return response;
-                }
-                //qCritical() << "Secondary application sent message to IPC server.";
-            }
+
+    // The primary takes the lock before it starts listening, so a launch that
+    // races a starting primary can briefly find no server. Retry for a while.
+    QDeadlineTimer deadline(5000);
+    while (true) {
+        socket.connectToServer(serverName, QLocalSocket::ReadWrite);
+        if (socket.waitForConnected(1000)) {
+            break;
         }
+        if (deadline.hasExpired()) {
+            qCritical() << "Secondary application cannot connect to IPC server.";
+            qCritical() << "Socket error: " << socket.error();
+            return "";
+        }
+        socket.abort();
+        QThread::msleep(100);
     }
-    else {
-        qCritical() << "Secondary application cannot connect to IPC server.";
-        qCritical() << "Socket error: " << socket.error();
-        QCoreApplication::exit();
+
+    socket.write(message);
+    if (socket.waitForBytesWritten()) {
+        if (wait) {
+            socket.waitForReadyRead();
+            std::string response = socket.readAll().toStdString();
+            return response;
+        }
     }
     return "";
 }
