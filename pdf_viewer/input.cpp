@@ -4677,6 +4677,49 @@ public:
     bool requires_document() { return false; }
 };
 
+
+class SetDarkMode : public Command {
+public:
+    static inline const std::string cname = "set_dark_mode";
+    static inline const std::string hname = "Set dark mode";
+
+    SetDarkMode(MainWidget* w) : Command(cname, w) {};
+
+    void perform() {
+        widget->set_dark_mode();
+    }
+
+    bool requires_document() { return false; }
+};
+
+class SetLightMode : public Command {
+public:
+    static inline const std::string cname = "set_light_mode";
+    static inline const std::string hname = "Set light mode";
+
+    SetLightMode(MainWidget* w) : Command(cname, w) {};
+
+    void perform() {
+        widget->set_light_mode();
+    }
+
+    bool requires_document() { return false; }
+};
+
+class SetCustomColorMode : public Command {
+public:
+    static inline const std::string cname = "set_custom_color_mode";
+    static inline const std::string hname = "Set custom color mode";
+
+    SetCustomColorMode(MainWidget* w) : Command(cname, w) {};
+
+    void perform() {
+        widget->set_custom_color_mode();
+    }
+
+    bool requires_document() { return false; }
+};
+
 class ToggleDarkModeCommand : public Command {
 public:
     static inline const std::string cname = "toggle_dark_mode";
@@ -7494,6 +7537,9 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<MoveSelectedBookmarkCommand>();
     register_command<RepeatLastCommandCommnad>();
     register_command<CloseWindowCommand>("q");
+    register_command<SetDarkMode>();
+    register_command<SetLightMode>();
+    register_command<SetCustomColorMode>();
 
 
     for (auto [command_name_, command_value] : ADDITIONAL_COMMANDS) {
