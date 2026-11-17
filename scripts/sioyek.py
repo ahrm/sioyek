@@ -606,6 +606,18 @@ class Sioyek:
     def goto_selected_text(self, focus=False):
         data = None
         self.run_command("goto_selected_text", data, focus=focus)
+
+    def set_dark_mode(self, focus=False):
+        data = None
+        self.run_command("set_dark_mode", data, focus=focus)
+
+    def set_light_mode(self, focus=False):
+        data = None
+        self.run_command("set_light_mode", data, focus=focus)
+
+    def set_custom_color_mode(self, focus=False):
+        data = None
+        self.run_command("set_custom_color_mode", data, focus=focus)
     
     def get_document(self, path):
         return Document(path, self)
