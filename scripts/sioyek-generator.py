@@ -133,6 +133,9 @@ sioyek_commands = {
     "previous_preview": [ False, False , False, False],
     "goto_overview": [ False, False , False, False],
     "portal_to_overview": [ False, False , False, False],
+    "set_dark_mode": [ False, False , False, False],
+    "set_light_mode": [ False, False , False, False],
+    "set_custom_color_mode": [ False, False , False, False],
     }
 
 def print_method(command_name, requires_text, requires_symbol, requires_filename):

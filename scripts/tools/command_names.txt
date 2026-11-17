@@ -186,8 +186,11 @@ search
 select_current_search_match
 select_freehand_drawings
 select_rect
+set_custom_color_mode
+set_dark_mode
 set_freehand_thickness
 set_freehand_type
+set_light_mode
 set_mark
 set_page_offset
 set_select_highlight_type
