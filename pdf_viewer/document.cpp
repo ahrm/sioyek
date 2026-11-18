@@ -4487,7 +4487,13 @@ std::wstring Document::detect_paper_name(fz_context* context, fz_document* doc) 
         else {
             char buffer[1000];
             fz_lookup_metadata(context, doc, FZ_META_INFO_TITLE, buffer, 1000);
-            return utf8_decode(buffer);
+            try {
+                return utf8_decode(buffer);
+            }
+            catch (utf8::exception& e) {
+                std::cerr << "error detecting paper name: " << e.what()
+                          << " ...leaving name blank" << std::endl;
+            }
         }
     }
     return L"";
