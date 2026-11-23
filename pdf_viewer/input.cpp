@@ -4423,6 +4423,18 @@ public:
     bool requires_document() { return false; }
 };
 
+class ToggleScreenCenterLineCommand : public Command {
+public:
+    static inline const std::string cname = "toggle_screen_center_line";
+    static inline const std::string hname = "Toggle screen center line";
+    ToggleScreenCenterLineCommand(MainWidget* w) : Command(cname, w) {};
+    void perform() {
+        widget->toggle_screen_center_line();
+    }
+
+    bool requires_document() { return false; }
+};
+
 class ToggleSynctexCommand : public Command {
 public:
     static inline const std::string cname = "toggle_synctex";
@@ -7332,6 +7344,7 @@ CommandManager::CommandManager(ConfigManager* config_manager) {
     register_command<MaximizeCommand>();
     register_command<ToggleOneWindowCommand>();
     register_command<ToggleHighlightCommand>();
+    register_command<ToggleScreenCenterLineCommand>();
     register_command<ToggleSynctexCommand>();
     register_command<TurnOnSynctexCommand>();
     register_command<ToggleShowLastCommand>();

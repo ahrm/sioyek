@@ -4149,6 +4149,10 @@ void MainWidget::toggle_custom_color_mode() {
     }
 }
 
+void MainWidget::toggle_screen_center_line() {
+    this->opengl_widget->toggle_screen_center_line();
+}
+
 
 void MainWidget::execute_command(std::wstring command, std::wstring text, bool wait) {
 

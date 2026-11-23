@@ -582,6 +582,7 @@ public:
 
     void toggle_dark_mode();
     void toggle_custom_color_mode();
+    void toggle_screen_center_line();
     void do_synctex_forward_search(const Path& pdf_file_path, const Path& latex_file_path, int line, int column);
     //void handle_args(const QStringList &arguments);
     void update_link_with_opened_book_state(Portal lnk, const OpenedBookState& new_state);
