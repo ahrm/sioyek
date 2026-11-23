@@ -815,6 +815,10 @@ void PdfViewOpenGLWidget::handle_escape() {
     highlighted_tags = {};
 }
 
+void PdfViewOpenGLWidget::toggle_screen_center_line() {
+    should_show_screen_center_line = !should_show_screen_center_line;
+}
+
 void PdfViewOpenGLWidget::toggle_highlight_links() {
     this->should_highlight_links = !this->should_highlight_links;
 }
@@ -1945,6 +1949,11 @@ void PdfViewOpenGLWidget::my_render(QPainter* painter) {
         render_overview(overview_page.value());
     }
     painter->endNativePainting();
+
+    if (should_show_screen_center_line) {
+        painter->setPen(qcc4(DEFAULT_VERTICAL_LINE_COLOR));
+        painter->drawLine(0, height() / 2, width(), height() / 2);
+    }
 
 }
 

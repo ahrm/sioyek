@@ -148,6 +148,7 @@ private:
     int rotation_index = 0;
     bool is_dragging = false;
     bool fastread_mode = false;
+    bool should_show_screen_center_line = false;
     int selected_highlight_index = -1;
     int selected_bookmark_index = -1;
 
@@ -234,6 +235,7 @@ public:
     void handle_escape();
 
     std::map<int, std::vector<MarkedDataRect>> get_marked_data_rect_map();
+    void toggle_screen_center_line();
     void toggle_highlight_links();
     void set_highlight_links(bool should_highlight_links, bool should_show_numbers);
     void toggle_highlight_words();
