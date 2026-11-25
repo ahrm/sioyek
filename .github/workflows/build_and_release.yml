@@ -55,12 +55,6 @@ jobs:
       with:
         plugins: qt appimage
 
-    - name: Set up GCC
-      uses: egor-tensin/setup-gcc@v1
-      with:
-        version: 9
-        platform: x64
-
     - uses: actions/checkout@v6
       with:
             submodules: 'recursive'
@@ -79,9 +73,6 @@ jobs:
       working-directory: ${{env.GITHUB_WORKSPACE}}
 
       run: MAKE_PARALLEL=$(nproc) ./linuxdeploy_build_and_release.sh
-      env:
-        CC:   gcc-9
-        CXX:  g++-9
     - name: upload linux artifact
       uses: actions/upload-artifact@v7
       with:
