@@ -13,76 +13,34 @@ on:
 
 jobs:
   upload-release:
-    if: ${{ (github.event_name == 'workflow_dispatch') || (github.event_name != 'pull_request') }}
-    runs-on: ubuntu-20.04
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-22.04
     needs: [build-mac, build-mac-arm, build-linux, build-windows]
 
     steps:
-    - uses: actions/checkout@v1
-    - name: create release
-      id: create_release
-      uses: actions/create-release@master
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN  }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.sha }}
-        draft: false
-        prerelease: true
+    - uses: actions/checkout@v6
     - name: download artifacts
-      uses: actions/download-artifact@v4
-      # with:
-      #   name: uploads     
-    - name: upload mac
-      id: upload-mac
-      uses: actions/upload-release-asset@v1.0.1
+      uses: actions/download-artifact@v8
+    - name: create release and upload assets
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./mac-uploads/sioyek-release-mac.zip
-        asset_name: sioyek-release-mac.zip
-        asset_content_type: application/zip   
-
-    - name: upload mac arm
-      id: upload-mac-arm
-      uses: actions/upload-release-asset@v1.0.1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./mac-arm-uploads/sioyek-release-mac-arm.zip
-        asset_name: sioyek-release-mac-arm.zip
-        asset_content_type: application/zip   
-
-    - name: upload linux
-      id: upload-linux
-      uses: actions/upload-release-asset@v1.0.1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./linux-uploads/sioyek-release-linux.zip
-        asset_name: sioyek-release-linux.zip
-        asset_content_type: application/zip   
-    - name: upload windows
-      id: upload-windows
-      uses: actions/upload-release-asset@v1.0.1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./windows-uploads/sioyek-release-windows.zip
-        asset_name: sioyek-release-windows.zip
-        asset_content_type: application/zip
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release create "${GITHUB_REF_NAME}" \
+          --title "Release ${GITHUB_SHA}" \
+          --generate-notes \
+          --prerelease \
+          ./mac-uploads/sioyek-release-mac.zip \
+          ./mac-arm-uploads/sioyek-release-mac-arm.zip \
+          ./linux-uploads/sioyek-release-linux.zip \
+          ./windows-uploads/sioyek-release-windows.zip
 
   build-linux:
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Cache apt-get packages
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       env:
         cache-name: cache-deb-packages
       with:
@@ -104,7 +62,7 @@ jobs:
         version: 9
         platform: x64
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
             submodules: 'recursive'
             ref: development
@@ -127,7 +85,7 @@ jobs:
         CC:   gcc-9
         CXX:  g++-9
     - name: upload linux artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: linux-uploads
         path: sioyek-release-linux.zip
@@ -141,7 +99,7 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
             submodules: 'recursive'
             ref: development
@@ -154,7 +112,7 @@ jobs:
         cache: true
 
     - name: Add MSBuild to PATH
-      uses: microsoft/setup-msbuild@v1.0.2
+      uses: microsoft/setup-msbuild@v3
 
     - name: Add msvc-dev-cmd
       uses: ilammy/msvc-dev-cmd@v1
@@ -165,24 +123,24 @@ jobs:
       run: .\build_windows.bat non_portable
       
     - name: upload windows artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: windows-uploads
         path: sioyek-release-windows.zip
         
   build-mac:
 
-    runs-on: macos-13
+    runs-on: macos-15-intel
 
     steps:
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
             submodules: 'recursive'
             ref: development
 
     - name: Cache Homebrew packages
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       env:
         cache-name: homebrew
       with:
@@ -210,24 +168,24 @@ jobs:
         MAKE_PARALLEL=$(sysctl -n hw.logicalcpu) ./build_mac.sh
         
     - name: upload mac artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: mac-uploads
         path: sioyek-release-mac.zip
 
   build-mac-arm:
 
-    runs-on: macos-14
+    runs-on: macos-15
 
     steps:
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
             submodules: 'recursive'
             ref: development
 
     - name: Cache Homebrew packages
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       env:
         cache-name: homebrew
       with:
@@ -256,7 +214,7 @@ jobs:
         mv sioyek-release-mac.zip sioyek-release-mac-arm.zip
         
     - name: upload mac artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: mac-arm-uploads
         path: sioyek-release-mac-arm.zip
