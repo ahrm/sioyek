@@ -50,10 +50,8 @@ jobs:
           ${{ runner.os }}-build-
           ${{ runner.os }}-
 
-    - name: Install LinuxDeploy
-      uses: miurahr/install-linuxdeploy-action@v1
-      with:
-        plugins: qt appimage
+    - name: Configure AppImage runtime
+      run: echo "APPIMAGE_EXTRACT_AND_RUN=1" >> "$GITHUB_ENV"
 
     - uses: actions/checkout@v6
       with:
