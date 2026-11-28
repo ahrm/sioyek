@@ -130,6 +130,7 @@ extern int MAIN_WINDOW_MOVE[2];
 extern int HELPER_WINDOW_MOVE[2];
 extern std::wstring STARTUP_COMMANDS;
 extern bool SHOULD_LAUNCH_NEW_WINDOW;
+extern bool RESTORE_TABS_AS_WINDOWS;
 extern bool SHOULD_LAUNCH_NEW_INSTANCE;
 extern bool SHOULD_CHECK_FOR_LATEST_VERSION_ON_STARTUP;
 extern bool SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE;
@@ -486,7 +487,9 @@ MainWidget* handle_args(const QStringList& arguments, QLocalSocket* origin=nullp
                 std::vector<std::wstring> last_opened_file_paths = get_last_opened_file_name();
                 if (last_opened_file_paths.size() > 0) {
                     pdf_file_name = last_opened_file_paths[0];
-                    windows[0]->open_tabs(last_opened_file_paths);
+                    if (!(RESTORE_TABS_AS_WINDOWS && SHOULD_LAUNCH_NEW_WINDOW)) {
+                        windows[0]->open_tabs(last_opened_file_paths);
+                    }
                 }
                 else if (SHOULD_LOAD_TUTORIAL_WHEN_NO_OTHER_FILE) {
                     pdf_file_name = tutorial_path.get_path();
@@ -936,6 +939,13 @@ int main(int argc, char* args[]) {
     }
 
     main_widget->show();
+
+    if (parser->positionalArguments().size() == 0 && RESTORE_TABS_AS_WINDOWS && SHOULD_LAUNCH_NEW_WINDOW) {
+        std::vector<std::wstring> saved_tabs = get_last_opened_file_name();
+        for (size_t i = 1; i < saved_tabs.size(); i++) {
+            handle_args(QStringList() << QCoreApplication::applicationFilePath() << QString::fromStdWString(saved_tabs[i]));
+        }
+    }
 
     // load input file from `QFileOpenEvent` for macOS drag and drop & "open with"
     QObject::connect(&app, &OpenWithApplication::file_ready, [&main_widget](const QString& file_name) {

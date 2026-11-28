@@ -151,6 +151,7 @@ bool OPEN_LAST_FILE_ON_STARTUP = true;
 bool FAIL_SAFE_AUTO_SAVE_SESSION = false;
 bool SHOULD_LAUNCH_NEW_INSTANCE = false;
 bool SHOULD_LAUNCH_NEW_WINDOW = false;
+bool RESTORE_TABS_AS_WINDOWS = false;
 bool SHOULD_DRAW_UNRENDERED_PAGES = false;
 bool PRESERVE_IMAGE_COLORS = false;
 bool INVERTED_PRESERVED_IMAGE_COLORS = false;
@@ -984,6 +985,7 @@ ConfigManager::ConfigManager(const Path& default_path, const Path& auto_path, co
     add_bool(L"fail_safe_auto_save_session", &FAIL_SAFE_AUTO_SAVE_SESSION);
     add_bool(L"should_launch_new_instance", &SHOULD_LAUNCH_NEW_INSTANCE);
     add_bool(L"should_launch_new_window", &SHOULD_LAUNCH_NEW_WINDOW);
+    add_bool(L"restore_tabs_as_windows", &RESTORE_TABS_AS_WINDOWS);
     add_bool(L"should_draw_unrendered_pages", &SHOULD_DRAW_UNRENDERED_PAGES);
     add_bool(L"hide_overlapping_link_labels", &HIDE_OVERLAPPING_LINK_LABELS);
     add_bool(L"real_page_separation", &REAL_PAGE_SEPARATION);
